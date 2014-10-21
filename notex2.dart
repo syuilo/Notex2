@@ -204,7 +204,7 @@ class Notex2 {
 						// 階層を調べるために進めたトークンリーダを元の位置まで巻き戻す
 						this.back(step);
 						if (nextSectionHierarchy <= section.hierarchy) {
-							this.back(1);
+							this.back();
 							return true;
 						} else {
 							return false;
@@ -222,17 +222,17 @@ class Notex2 {
 	
 	Text analyzeText() {
 		Text text = new Text();
-		this.back(1);
+		this.back();
 		this.scan((token) {
 			switch (token) {
 				case '*':
-					this.back(1);
+					this.back();
 					return true;
 				case '[':
-					this.back(1);
+					this.back();
 					return true;
 				case '#':
-					this.back(1);
+					this.back();
 					return true;
 				default:
 					text.text += token;
@@ -244,11 +244,11 @@ class Notex2 {
 	
 	Paragraph analyzeParagraph() {
 		Paragraph p = new Paragraph();
-		this.back(1);
+		this.back();
 		this.scan((token) {
 			switch (token) {
 				case '#':
-					this.back(1);
+					this.back();
 					return true;
 				case '*':
 					p.children.add(this.analyzeStrong());
@@ -269,11 +269,11 @@ class Notex2 {
 		this.scan((token) {
 			switch (token) {
 				case '*':
-					this.next(1);
+					this.next();
 					return true;
 				default:
 					strong.children.add(this.analyzeText());
-					this.next(1);
+					this.next();
 					return true;
 			}
 		});
@@ -281,12 +281,12 @@ class Notex2 {
 	}
 	
 	Link analyzeLink() {
-		this.back(1);
+		this.back();
 		Link link = new Link();
 		this.scan((token) {
 			switch (token) {
 				case '\$':
-					this.next(1);
+					this.next();
 					return true;
 				default:
 					link.children = this.analyze((token) {
@@ -298,7 +298,7 @@ class Notex2 {
 		/*this.scan((token) {
 			switch (token) {
 				case ')':
-					this.next(1);
+					this.next();
 					return true;
 				default:
 					link.url += token;
@@ -308,11 +308,11 @@ class Notex2 {
 		return link;
 	}
 	
-	void next(int step) {
+	void next([int step = 1]) {
 		this.pos += step;
 	}
 	
-	void back(int step) {
+	void back([int step = 1) {
 		this.pos -= step;
 	}
 
@@ -320,7 +320,7 @@ class Notex2 {
 		while (this.pos != this.source.length) {
 			String token = this.source[this.pos];
 			//print(token);
-			this.next(1);
+			this.next();
 			if (scanner(token) == true) {
 				break;
 			}

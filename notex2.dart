@@ -312,7 +312,7 @@ class Notex2 {
 		this.pos += step;
 	}
 	
-	void back([int step = 1) {
+	void back([int step = 1]) {
 		this.pos -= step;
 	}
 

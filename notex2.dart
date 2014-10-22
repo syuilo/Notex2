@@ -6,8 +6,21 @@ interface IElement {
 
 library Notex2;
 
+void scream() {
+	print("うー！にゃー！" * 4);
+}
+
 String indent(int hierarchy) {
-	return ("\t" * hierarchy);
+	//return ("\t" * hierarchy);
+	return ("^   " * hierarchy);
+}
+
+/**
+ * Token
+ */
+class Token {
+	String token = "";
+	String lexeme = "";
 }
 
 abstract class Element {
@@ -31,7 +44,12 @@ class Text extends Element {
 	}
 	
 	String toHtml([int hierarchy = 0]) {
-		return this.text.replaceAll(new RegExp(r'\n\n'), '\n').replaceAll(new RegExp(r'\n'), '</br>');
+		String html = this.text;
+		html = html.replaceAll(new RegExp(r'\n\n'), '\n');
+		html = html.replaceAll(new RegExp(r'^\n'), '');
+		html = html.replaceAll(new RegExp(r'\n$'), '');
+		html = html.replaceAll('\n', '</br>');
+		return html;
 	}
 }
 
@@ -75,10 +93,14 @@ class Section extends Element {
 	
 	String toHtml([int hierarchy = 0]) {
 		String html = "";
+		String h = "h$hierarchy";
 		for (Element element in this.children) {
 			html += element.toHtml(hierarchy + 1);
 		}
-		return indent(hierarchy)+"<section>\n"+indent(hierarchy+1)+"<h$hierarchy>$title</h$hierarchy>\n$html"+indent(hierarchy)+"</section>\n";
+		return indent(hierarchy) + "<section>\n"
+				+ indent(hierarchy + 1) + "<$h>$title</$h>\n"
+				+ html
+				+ indent(hierarchy) + "</section>\n";
 	}
 }
 
@@ -162,52 +184,231 @@ class Image extends Element {
 	}
 }
 
+class Code extends Element {
+	String code = "";
+	String lang = "plain";
+	Element parent;
+	
+	Code() {
+	}
+	
+	bool findParagraph() {
+		return this.parent.findParagraph();
+	}
+	
+	String toHtml([int hierarchy = 0]) {
+		return indent(hierarchy) + "<pre><code data-lang=\"$lang\">$code</code></pre>\n";
+	}
+}
+
+/**
+ * コンパイラ本体です。
+ */
 class Notex2 {
 	String source;
+	List<Token> tokens;
 	int pos = 0; // トークンリーダの位置
 	int hierarchy = 0; // 現在の階層
 	String tableOfContents = "";
 	int sectionCount = 0;
 	
-	bool is_strong = false;
-	bool is_p = false;
-	bool is_inlineClass = false;
-	bool is_blockClass = false;
-	
 	Notex2(String source) {
 		this.source = source;
+		this.tokens = new List();
 	}
 	
 	Article compile() {
+		this.tokens = this.lexicalAnalyzer();
 		Article article = new Article();
 		article.children = this.analyze(article, (token){return false;});
 		return article;
 	}
 	
 	/**
+	 * 字句解析器。トークンリストを生成します。
+	 */
+	List<Token> lexicalAnalyzer() {
+		List<Token> tokens = new List();
+		int pos = 0;
+		Token tokeniza() {
+			Token token = new Token();
+			bool text = false;
+			while ((pos + 1) != this.source.length) {
+				String char = this.source[pos];
+				pos++;
+				switch (char) {
+					case ' ':
+						if (!text) {
+							token.token = 'space';
+							token.lexeme = char;
+						} else {
+							pos--;
+						}
+						return token;
+					case '\n':
+						if (!text) {
+							token.token = 'newline';
+							token.lexeme = char;
+						} else {
+							pos--;
+						}
+						return token;
+					case '\'':
+						if (!text) {
+							token.token = 'quotation';
+							token.lexeme = char;
+						} else {
+							pos--;
+						}
+						return token;
+					case '\"':
+						if (!text) {
+							token.token = 'double_quotation';
+							token.lexeme = char;
+						} else {
+							pos--;
+						}
+						return token;
+					case '@':
+						if (!text) {
+							token.token = 'at_mark';
+							token.lexeme = char;
+						} else {
+							pos--;
+						}
+						return token;
+					case '#':
+						if (!text) {
+							token.token = 'sharp';
+							token.lexeme = char;
+						} else {
+							pos--;
+						}
+						return token;
+					case '*':
+						if (!text) {
+							token.token = 'asterisk';
+							token.lexeme = char;
+						} else {
+							pos--;
+						}
+						return token;
+					case '-':
+						if (!text) {
+							token.token = 'hyphen';
+							token.lexeme = char;
+						} else {
+							pos--;
+						}
+						return token;
+					case '(':
+						if (!text) {
+							token.token = 'open_bracket';
+							token.lexeme = char;
+						} else {
+							pos--;
+						}
+						return token;
+					case ')':
+						if (!text) {
+							token.token = 'close_bracket';
+							token.lexeme = char;
+						} else {
+							pos--;
+						}
+						return token;
+					case '[':
+						if (!text) {
+							token.token = 'open_square_bracket';
+							token.lexeme = char;
+						} else {
+							pos--;
+						}
+						return token;
+					case ']':
+						if (!text) {
+							token.token = 'close_square_bracket';
+							token.lexeme = char;
+						} else {
+							pos--;
+						}
+						return token;
+					case '<':
+						if (!text) {
+							token.token = 'greater_than';
+							token.lexeme = char;
+						} else {
+							pos--;
+						}
+						return token;
+					case '>':
+						if (!text) {
+							token.token = 'less_than';
+							token.lexeme = char;
+						} else {
+							pos--;
+						}
+						return token;
+					case '!':
+						if (!text) {
+							token.token = 'exclamation_mark';
+							token.lexeme = char;
+						} else {
+							pos--;
+						}
+						return token;
+					default:
+						text = true;
+						token.token = 'text';
+						token.lexeme += char;
+						break;
+				}
+				
+			}
+			return token;
+		}
+		
+		while ((pos + 1) != this.source.length) {
+			var token = tokeniza();
+			print("${token.token}\t: ${token.lexeme}");
+			tokens.add(token);
+		}
+		
+		return tokens;
+	}
+	
+	/**
 	 * 
 	 */
-	List<Element> analyze(Element parent, [inspecter(token)]) {
+	List<Element> analyze(Element parent, [inspecter(Token token)]) {
 		List<Element> elements = new List();
-		this.scan((token) {
+		this.scan((Token token) {
 			if (inspecter != null) {
 				if (inspecter(token)) {
 					return true;
 				}
 			}
-			switch (token) {
-				case '#': // Section
+			switch (token.token) {
+				case 'sharp': // Section
 					elements.add(this.analyzeSection(parent));
 					break;
-				case '*': // Strong
+				case 'asterisk': // Strong
 					elements.add(this.analyzeStrong(parent));
 					break;
-				case '[': // Link
+				case 'open_square_bracket': // Link
 					elements.add(this.analyzeLink(parent));
 					break;
-				case '!': // Image
+				case 'exclamation_mark': // Image
 					elements.add(this.analyzeImage(parent));
 					break;
+				case 'quotation':
+					if (this.tokens[this.pos + 1].token == 'quotation' &&
+						this.tokens[this.pos + 2].token == 'quotation') {
+						elements.add(this.analyzeCode(parent));
+						break;
+					}
+					continue text;
+			text:
 				default:
 					if (!parent.findParagraph()) {
 						elements.add(this.analyzeParagraph(parent, inspecter));
@@ -215,10 +416,10 @@ class Notex2 {
 						elements.add(this.analyzeText(parent, inspecter));
 					}
 					if (inspecter != null) {
-                				if (inspecter(this.source[this.pos])) {
-                					return true;
-                				}
-                			}
+        				if (inspecter(this.tokens[this.pos])) {
+        					return true;
+        				}
+        			}
 					break;
 			}
 		});
@@ -232,28 +433,36 @@ class Notex2 {
 		Text text = new Text();
 		text.parent = parent;
 		//this.back();
-		this.scan((token) {
+		this.scan((Token token) {
 			if (inspecter != null) {
 				if (inspecter(token)) {
 					return true;
 				}
 			}
-			switch (token) {
-				case '*':
+			switch (token.token) {
+				case 'asterisk':
 					this.back();
 					return true;
-				case '[':
+				case 'open_square_bracket':
 					this.back();
 					return true;
-				case '!':
+				case 'exclamation_mark':
 					this.back();
 					return true;
-				case '#':
+				case 'sharp':
 					this.back();
 					return true;
+				case 'quotation':
+					if (this.tokens[this.pos + 1].token == 'quotation' &&
+						this.tokens[this.pos + 2].token == 'quotation') {
+						//this.back();
+    					return true;
+					}
+					continue text;
+			text:
 				default:
-					text.text += token;
-					break;
+					text.text = token.lexeme;
+					return true;
 			}
 		});
 		return text;
@@ -265,32 +474,40 @@ class Notex2 {
 	Element analyzeParagraph(Element parent, [inspecter(token)]) {
 		Paragraph p = new Paragraph();
 		p.parent = parent;
-		this.scan((token) {
+		this.scan((Token token) {
 			if (inspecter != null) {
 				if (inspecter(token)) {
 					return true;
 				}
 			}
-			switch (token) {
-				case '#':
+			switch (token.token) {
+				case 'sharp':
 					this.back();
 					return true;
-				case '*':
+				case 'asterisk':
 					p.children.add(this.analyzeStrong(p));
 					break;
-				case '[':
+				case 'open_square_bracket':
 					p.children.add(this.analyzeLink(p));
 					break;
-				case '!':
+				case 'exclamation_mark':
 					p.children.add(this.analyzeImage(p));
 					break;
+				case 'quotation':
+					if (this.tokens[this.pos + 1].token == 'quotation' &&
+						this.tokens[this.pos + 2].token == 'quotation') {
+						this.back();
+						return true;
+					}
+					continue text;
+			text:
 				default:
 					p.children.add(this.analyzeText(p, inspecter));
 					if (inspecter != null) {
-                				if (inspecter(this.source[this.pos])) {
-                					return true;
-                				}
-                			}
+        				if (inspecter(this.tokens[this.pos])) {
+        					return true;
+        				}
+        			}
 					break;
 			}
 		});
@@ -306,10 +523,10 @@ class Notex2 {
 		section.hierarchy = 0;
 		bool secEnd = false;
 		
-		this.scan((token) {
+		this.scan((Token token) {
 			if (!secEnd) {
-				switch (token) {
-					case '#':
+				switch (token.token) {
+					case 'sharp':
 						if (section.title == "") {
 							section.hierarchy++;
 						} else {
@@ -319,27 +536,27 @@ class Notex2 {
 					/*case "\r":
 						secEnd = true;
 						break;*/
-					case "\n":
+					case "newline":
 						print("["+("-"*(section.hierarchy-1))+"> セクションの開始 h:${section.hierarchy} title:${section.title}]");
 						//this.back();
 						secEnd = true;
 						break;
 					default:
-						section.title += token;
+						section.title += token.lexeme;
 						break;
 				}
 			} else {
 				section.children = this.analyze(section, (token) {
-					if (token == '#') {
+					if (token.token == 'sharp') {
 						// 次に始まるセクションの階層を調べる
 						// もし自分より上か同階層なら自分のセクションは終了
 						
 						int nextSectionHierarchy = 1;
 						int step = 0;
 						this.next();
-						this.scan((String secToken) {
+						this.scan((Token secToken) {
 							step++;
-							if (secToken == '#') {
+							if (secToken.token == 'sharp') {
 								nextSectionHierarchy++;
 								return false;
 							} else {
@@ -369,9 +586,9 @@ class Notex2 {
 		Strong strong = new Strong();
 		strong.parent = parent;
 		this.next();
-		this.scan((token) {
-			switch (token) {
-				case '*':
+		this.scan((Token token) {
+			switch (token.token) {
+				case 'asterisk':
 					this.next();
 					return true;
 				default:
@@ -387,21 +604,21 @@ class Notex2 {
 		Link link = new Link();
 		link.parent = parent;
 		this.next();
-		this.scan((token) {
+		this.scan((Token token) {
 			link.children = this.analyze(link, (token) {
-				return token == ']';
+				return token.token == 'close_square_bracket';
 			});
 			return true;
 		});
 		// URLが見つかるまで空回し
-		this.scan((token){return token == '(';});
+		this.scan((Token token){return token.token == 'open_bracket';});
 		this.next();
-		this.scan((token) {
-			switch (token) {
-				case ')':
+		this.scan((Token token) {
+			switch (token.token) {
+				case 'close_bracket':
 					return true;
 				default:
-					link.url += token;
+					link.url += token.lexeme;
 					break;
 			}
 		});
@@ -412,26 +629,63 @@ class Notex2 {
 		Image img = new Image();
 		img.parent = parent;
 		this.next();
-		this.scan((token) {
-			switch (token) {
-				case ')':
+		this.scan((Token token) {
+			switch (token.token) {
+				case 'close_bracket':
 					return true;
 				default:
-					img.url += token;
+					img.url += token.lexeme;
 					break;
 			}
 		});
 		return img;
 	}
 	
+	Code analyzeCode(Element parent) {
+		scream();
+		Code code = new Code();
+		code.parent = parent;
+		this.next(3);
+		if (this.tokens[this.pos].token == 'at_mark') {
+			this.next();
+			code.lang = "";
+			this.scan((Token token) {
+    			switch (token.token) {
+    				case 'newline':
+    					this.next();
+    					return true;
+    				default:
+    					code.lang += token.lexeme;
+    					break;
+    			}
+    		});
+		}
+		this.scan((Token token) {
+			switch (token.token) {
+				case 'quotation':
+					if (this.tokens[this.pos + 1].token == 'quotation' &&
+						this.tokens[this.pos + 2].token == 'quotation') {
+						this.next(3);
+						return true;
+					}
+					continue text;
+			text:
+				default:
+					code.code += token.lexeme;
+					break;
+			}
+		});
+		return code;
+	}
+	
 	/**
 	 * トークンリーダを指定した分だけ進めます。
 	 */
 	void next([int step = 1]) {
-		if ((this.pos + step) < this.source.length) {
+		if ((this.pos + step) < this.tokens.length) {
 			this.pos += step;
 		} else {
-			this.pos = this.source.length - 1;
+			this.pos = this.tokens.length - 1;
 		}
 	}
 	
@@ -446,9 +700,9 @@ class Notex2 {
 	 * ソースを走査します。トークンに出会う度に指定されたスキャナが呼ばれます。
 	 * スキャナが [true] を返した場合、そこで直ちに走査は終了し、関数が終了します。
 	 */
-	void scan(bool scanner(String token)) {
-		while ((this.pos + 1) != this.source.length) {
-			String token = this.source[this.pos];
+	void scan(bool scanner(Token token)) {
+		while ((this.pos + 1) < this.tokens.length) {
+			Token token = this.tokens[this.pos];
 			//print(token);
 			if (scanner(token) == true) {
 				break;

@@ -452,7 +452,7 @@ class Notex2 {
 	
 	Element verifySection(Element parent, [inspecter(Token token), List<String> filter]) {
 		if (filter != null) {
-			if (filter.indexOf('section') == -1) {
+			if (filter.indexOf('section') > -1) {
 				return null;
 			}
 		}
@@ -461,7 +461,7 @@ class Notex2 {
 	
 	Element verifyParagraph(Element parent, [inspecter(Token token), List<String> filter]) {
 		if (filter != null) {
-			if (filter.indexOf('paragraph') == -1) {
+			if (filter.indexOf('paragraph') > -1) {
 				return null;
 			}
 		}
@@ -470,7 +470,7 @@ class Notex2 {
 	
 	Element verifyStrong(Element parent, [inspecter(Token token), List<String> filter]) {
 		if (filter != null) {
-			if (filter.indexOf('strong') == -1) {
+			if (filter.indexOf('strong') > -1) {
 				return null;
 			}
 		}
@@ -479,16 +479,16 @@ class Notex2 {
 	
 	Element verifyLink(Element parent, [inspecter(Token token), List<String> filter]) {
 		if (filter != null) {
-			if (filter.indexOf('link') == -1) {
+			if (filter.indexOf('link') > -1) {
 				return null;
 			}
 		}
-		return this.analyzeLink(parent);
+		return this.analyzeLink(parent, inspecter, filter);
 	}
 	
 	Element verifyImage(Element parent, [inspecter(Token token), List<String> filter]) {
 		if (filter != null) {
-			if (filter.indexOf('image') == -1) {
+			if (filter.indexOf('image') > -1) {
 				return null;
 			}
 		}
@@ -497,7 +497,7 @@ class Notex2 {
 	
 	Element verifyList(Element parent, [inspecter(Token token), List<String> filter]) {
 		if (filter != null) {
-			if (filter.indexOf('list') == -1) {
+			if (filter.indexOf('list') > -1) {
 				return null;
 			}
 		}
@@ -506,7 +506,7 @@ class Notex2 {
 	
 	Element verifyCode(Element parent, [inspecter(Token token), List<String> filter]) {
 		if (filter != null) {
-			if (filter.indexOf('code') == -1) {
+			if (filter.indexOf('code') > -1) {
 				return null;
 			}
 		}
@@ -519,7 +519,7 @@ class Notex2 {
 	 * 
 	 * @param Element parent 生成される要素の親になる要素。
 	 * @param function(Token token) inspector 設定するとトークンの読み出しごとに読み出したトークンを与えて呼び出されます。[true]を返すとスキャンは直ちに終了します。
-	 * @param List<String> filter 生成が可能な要素の名称の配列。設定すると、ここに記載されている要素のみ生成対象にします。
+	 * @param List<String> filter 生成を禁止する要素の名称の配列。設定すると、ここに記載されている要素は生成対象にしません。
 	 * 
 	 * @return 生成された要素の配列。
 	 */
@@ -604,7 +604,7 @@ class Notex2 {
 			switch (token.token) {
 				case 'asterisk':
 					if (filter != null) {
-            			if (filter.indexOf('strong') == -1) {
+            			if (filter.indexOf('strong') > -1) {
             				continue text;
             			}
             		}
@@ -757,6 +757,9 @@ class Notex2 {
 		return section;	
 	}
 	
+	/**
+	 * Strongを解析します。
+	 */
 	Strong analyzeStrong(Element parent) {
 		Strong strong = new Strong();
 		strong.parent = parent;
@@ -775,14 +778,17 @@ class Notex2 {
 		return strong;
 	}
 	
-	Link analyzeLink(Element parent) {
+	/**
+	 * リンクを解析します。
+	 */
+	Link analyzeLink(Element parent, [inspecter(token), List<String> filter]) {
 		Link link = new Link();
 		link.parent = parent;
 		this.next();
 		this.scan((Token token) {
 			link.children = this.analyze(link, (token) {
 				return token.token == 'close_square_bracket';
-			});
+			}, filter);
 			return true;
 		});
 		// URLが見つかるまで空回し
@@ -867,7 +873,7 @@ class Notex2 {
 			EListItem item = new EListItem();
 			item.children = this.analyze(list, (token) {
 				return token.token == 'newline';
-			}, ['strong', 'link']);
+			}, ['paragraph']);
 			list.children.add(item);
 			if (this.read(1).token == 'newline') {
 				this.next();

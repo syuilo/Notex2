@@ -11,13 +11,24 @@ String indent(int hierarchy) {
 }
 
 abstract class Element {
-	// HTML文字列を生成します。
+	/**
+	 * HTML文字列を生成します。
+	 */
 	String toHtml([int hierarchy = 0]);
+	
+	/**
+	 * 自分の親にParagraphが存在するかどうかを取得します。
+	 */
+	bool findParagraph();
 }
 
 class Text extends Element {
 	String text = "";
 	Element parent;
+	
+	bool findParagraph() {
+		return this.parent.findParagraph();
+	}
 	
 	String toHtml([int hierarchy = 0]) {
 		return this.text.replaceAll(new RegExp(r'\n\n'), '\n').replaceAll(new RegExp(r'\n'), '</br>');
@@ -26,6 +37,10 @@ class Text extends Element {
 
 class Article extends Element {
 	List<Element> children;
+	
+	bool findParagraph() {
+		return false;
+	}
 	
 	Article() {
 		this.children = new List();
@@ -54,12 +69,16 @@ class Section extends Element {
 		this.children = new List();
 	}
 	
+	bool findParagraph() {
+		return this.parent.findParagraph();
+	}
+	
 	String toHtml([int hierarchy = 0]) {
 		String html = "";
 		for (Element element in this.children) {
 			html += element.toHtml(hierarchy + 1);
 		}
-		return "\n"+indent(hierarchy)+"<section>\n"+indent(hierarchy+1)+"<h$hierarchy>$title</h$hierarchy>\n$html"+indent(hierarchy)+"</section>\n";
+		return indent(hierarchy)+"<section>\n"+indent(hierarchy+1)+"<h$hierarchy>$title</h$hierarchy>\n$html"+indent(hierarchy)+"</section>\n";
 	}
 }
 
@@ -69,6 +88,10 @@ class Paragraph extends Element {
 	
 	Paragraph() {
 		this.children = new List();
+	}
+	
+	bool findParagraph() {
+		return true;
 	}
 	
 	String toHtml([int hierarchy = 0]) {
@@ -88,6 +111,10 @@ class Strong extends Element {
 		this.children = new List();
 	}
 	
+	bool findParagraph() {
+		return this.parent.findParagraph();
+	}
+	
 	String toHtml([int hierarchy = 0]) {
 		String html = "";
 		for (Element element in this.children) {
@@ -104,6 +131,10 @@ class Link extends Element {
 	
 	Link() {
 		this.children = new List();
+	}
+	
+	bool findParagraph() {
+		return this.parent.findParagraph();
 	}
 	
 	String toHtml([int hierarchy = 0]) {
@@ -137,6 +168,9 @@ class Notex2 {
 		return article;
 	}
 	
+	/**
+	 * 
+	 */
 	List<Element> analyze(Element parent, [inspecter(token)]) {
 		List<Element> elements = new List();
 		this.scan((token) {
@@ -156,8 +190,16 @@ class Notex2 {
 					elements.add(this.analyzeLink(parent));
 					break;
 				default:
-					//elements.add(this.analyzeParagraph());
-					elements.add(this.analyzeText(parent, inspecter));
+					if (!parent.findParagraph()) {
+						elements.add(this.analyzeParagraph(parent, inspecter));
+					} else {
+						elements.add(this.analyzeText(parent, inspecter));
+					}
+					if (inspecter != null) {
+                				if (inspecter(this.source[this.pos])) {
+                					return true;
+                				}
+                			}
 					break;
 			}
 		});
@@ -193,6 +235,41 @@ class Notex2 {
 			}
 		});
 		return text;
+	}
+	
+	/**
+	 * Paragraphを解析します。
+	 */
+	Element analyzeParagraph(Element parent, [inspecter(token)]) {
+		Paragraph p = new Paragraph();
+		p.parent = parent;
+		this.scan((token) {
+			if (inspecter != null) {
+				if (inspecter(token)) {
+					return true;
+				}
+			}
+			switch (token) {
+				case '#':
+					this.back();
+					return true;
+				case '*':
+					p.children.add(this.analyzeStrong(p));
+					break;
+				case '[':
+					p.children.add(this.analyzeLink(p));
+					break;
+				default:
+					p.children.add(this.analyzeText(p, inspecter));
+					if (inspecter != null) {
+                				if (inspecter(this.source[this.pos])) {
+                					return true;
+                				}
+                			}
+					break;
+			}
+		});
+		return p;
 	}
 	
 	/**
@@ -241,7 +318,6 @@ class Notex2 {
 								nextSectionHierarchy++;
 								return false;
 							} else {
-								//print("${nextSectionHierarchy} ${secToken}");
 								return true;
 							}
 						});
@@ -262,28 +338,6 @@ class Notex2 {
 		});
 		print("["+("-"*(section.hierarchy-1))+"< セクションの終了 h:${section.hierarchy} title:${section.title}]");
 		return section;	
-	}
-	
-	Paragraph _analyzeParagraph() {
-		Paragraph p = new Paragraph();
-		this.back();
-		this.scan((token) {
-			switch (token) {
-				case '#':
-					this.back();
-					return true;
-				case '*':
-					p.children.add(this.analyzeStrong(p));
-					break;
-				case '[':
-					p.children.add(this.analyzeLink(p));
-					break;
-				default:
-					p.children.add(this.analyzeText(p));
-					break;
-			}
-		});
-		return p;
 	}
 	
 	Strong analyzeStrong(Element parent) {
@@ -308,22 +362,19 @@ class Notex2 {
 		//this.back();
 		Link link = new Link();
 		link.parent = parent;
+		this.next();
 		this.scan((token) {
-			switch (token) {
-				case '\$':
-					this.next();
-					return true;
-				default:
-					link.children = this.analyze(link, (token) {
-						return token == ']';
-					});
-					return true;
-			}
+			link.children = this.analyze(link, (token) {
+				return token == ']';
+			});
+			return true;
 		});
+		// URLが見つかるまで空回し
+		this.scan((token){return token == '(';});
+		this.next();
 		this.scan((token) {
 			switch (token) {
 				case ')':
-					this.next();
 					return true;
 				default:
 					link.url += token;
@@ -340,7 +391,7 @@ class Notex2 {
 		if ((this.pos + step) < this.source.length) {
 			this.pos += step;
 		} else {
-			this.pos = this.source.length-1;
+			this.pos = this.source.length - 1;
 		}
 	}
 	
@@ -350,10 +401,14 @@ class Notex2 {
 	void back([int step = 1]) {
 		this.pos -= step;
 	}
-
+	
+	void idling() {
+		
+	}
+	
 	/**
 	 * ソースを走査します。トークンに出会う度に指定されたスキャナが呼ばれます。
-	 * スキャナが true を返した場合、そこで直ちに走査は終了し、関数が終了します。
+	 * スキャナが [true] を返した場合、そこで直ちに走査は終了し、関数が終了します。
 	 */
 	void scan(bool scanner(String token)) {
 		while ((this.pos + 1) != this.source.length) {

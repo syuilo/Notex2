@@ -1,8 +1,8 @@
 /*
-interface IElement {
-	String toHtml();
-}
-*/
+ * Copyright (c) 2014 syuilo All rights reserved.
+ * Thanks for Akari, Chinatsu, Yui, Kyoko and you.
+ *                                                      syuilo
+ **************************************************************** */
 
 library Notex2;
 
@@ -12,7 +12,7 @@ void scream() {
 
 String indent(int hierarchy) {
 	//return ("\t" * hierarchy);
-	return ("^   " * hierarchy);
+	return ("    " * hierarchy);
 }
 
 /**
@@ -121,7 +121,7 @@ class Paragraph extends Element {
 		for (Element element in this.children) {
 			html += element.toHtml();
 		}
-		return indent(hierarchy)+"<p>$html</p>\n";
+		return indent(hierarchy) + "<p>$html</p>\n";
 	}
 }
 
@@ -201,6 +201,53 @@ class Code extends Element {
 	}
 }
 
+class EList extends Element {
+	String type = "unordered"; // unordered or ordered
+	Element parent;
+	List<EListItem> children;
+	
+	EList() {
+		this.children = new List();
+	}
+	
+	bool findParagraph() {
+		return this.parent.findParagraph();
+	}
+	
+	String toHtml([int hierarchy = 0]) {
+		String html = "";
+		for (Element element in this.children) {
+			html += element.toHtml(hierarchy + 1);
+		}
+		if (this.type == "ordered") {
+			return indent(hierarchy) + "<ol>\n$html" + indent(hierarchy) + "</ol>\n";
+		} else {
+			return indent(hierarchy) + "<ul>\n$html" + indent(hierarchy) + "</ul>\n";
+		}
+	}
+}
+
+class EListItem extends Element {
+	EList parent;
+	List<Element> children;
+	
+	EListItem() {
+		this.children = new List();
+	}
+	
+	bool findParagraph() {
+		return this.parent.findParagraph();
+	}
+	
+	String toHtml([int hierarchy = 0]) {
+		String html = "";
+		for (Element element in this.children) {
+			html += element.toHtml();
+		}
+		return indent(hierarchy) + "<li>$html</li>\n";
+	}
+}
+
 /**
  * コンパイラ本体です。
  */
@@ -253,6 +300,23 @@ class Notex2 {
 							pos--;
 						}
 						return token;
+					case '0':
+					case '1':
+					case '2':
+					case '3':
+					case '4':
+					case '5':
+					case '6':
+					case '7':
+					case '8':
+					case '9':
+						if (!text) {
+							token.token = 'number';
+							token.lexeme = char;
+						} else {
+							pos--;
+						}
+						return token;
 					case '\'':
 						if (!text) {
 							token.token = 'quotation';
@@ -261,9 +325,18 @@ class Notex2 {
 							pos--;
 						}
 						return token;
+						
 					case '\"':
 						if (!text) {
 							token.token = 'double_quotation';
+							token.lexeme = char;
+						} else {
+							pos--;
+						}
+						return token;
+					case '.':
+						if (!text) {
+							token.token = 'period';
 							token.lexeme = char;
 						} else {
 							pos--;
@@ -377,10 +450,80 @@ class Notex2 {
 		return tokens;
 	}
 	
+	Element verifySection(Element parent, [inspecter(Token token), List<String> filter]) {
+		if (filter != null) {
+			if (filter.indexOf('section') == -1) {
+				return null;
+			}
+		}
+		return this.analyzeSection(parent);
+	}
+	
+	Element verifyParagraph(Element parent, [inspecter(Token token), List<String> filter]) {
+		if (filter != null) {
+			if (filter.indexOf('paragraph') == -1) {
+				return null;
+			}
+		}
+		return this.analyzeParagraph(parent);
+	}
+	
+	Element verifyStrong(Element parent, [inspecter(Token token), List<String> filter]) {
+		if (filter != null) {
+			if (filter.indexOf('strong') == -1) {
+				return null;
+			}
+		}
+		return this.analyzeStrong(parent);
+	}
+	
+	Element verifyLink(Element parent, [inspecter(Token token), List<String> filter]) {
+		if (filter != null) {
+			if (filter.indexOf('link') == -1) {
+				return null;
+			}
+		}
+		return this.analyzeLink(parent);
+	}
+	
+	Element verifyImage(Element parent, [inspecter(Token token), List<String> filter]) {
+		if (filter != null) {
+			if (filter.indexOf('image') == -1) {
+				return null;
+			}
+		}
+		return this.analyzeImage(parent);
+	}
+	
+	Element verifyList(Element parent, [inspecter(Token token), List<String> filter]) {
+		if (filter != null) {
+			if (filter.indexOf('list') == -1) {
+				return null;
+			}
+		}
+		return this.analyzeList(parent);
+	}
+	
+	Element verifyCode(Element parent, [inspecter(Token token), List<String> filter]) {
+		if (filter != null) {
+			if (filter.indexOf('code') == -1) {
+				return null;
+			}
+		}
+		return this.analyzeCode(parent);
+	}
+	
 	/**
+	 * トークンを解析し、要素を生成します。
+	 * スキャンが開始される位置は現在のトークンリーダに基づきます。
 	 * 
+	 * @param Element parent 生成される要素の親になる要素。
+	 * @param function(Token token) inspector 設定するとトークンの読み出しごとに読み出したトークンを与えて呼び出されます。[true]を返すとスキャンは直ちに終了します。
+	 * @param List<String> filter 生成が可能な要素の名称の配列。設定すると、ここに記載されている要素のみ生成対象にします。
+	 * 
+	 * @return 生成された要素の配列。
 	 */
-	List<Element> analyze(Element parent, [inspecter(Token token)]) {
+	List<Element> analyze(Element parent, [inspecter(Token token), List<String> filter]) {
 		List<Element> elements = new List();
 		this.scan((Token token) {
 			if (inspecter != null) {
@@ -390,20 +533,34 @@ class Notex2 {
 			}
 			switch (token.token) {
 				case 'sharp': // Section
-					elements.add(this.analyzeSection(parent));
+					Element element = verifySection(parent, inspecter, filter);
+					if (element != null) elements.add(element); else continue text;
 					break;
 				case 'asterisk': // Strong
-					elements.add(this.analyzeStrong(parent));
+					Element element = verifyStrong(parent, inspecter, filter);
+					if (element != null) elements.add(element); else continue text;
 					break;
 				case 'open_square_bracket': // Link
-					elements.add(this.analyzeLink(parent));
+					Element element = verifyLink(parent, inspecter, filter);
+					if (element != null) elements.add(element); else continue text;
 					break;
 				case 'exclamation_mark': // Image
-					elements.add(this.analyzeImage(parent));
+					Element element = verifyImage(parent, inspecter, filter);
+					if (element != null) elements.add(element); else continue text;
 					break;
+				case 'newline':
+					if (this.read(1).token == 'hyphen' ||
+						this.read(1).token == 'number') { // List
+						Element element = verifyList(parent, inspecter, filter);
+    					if (element != null) elements.add(element); else continue text;
+						break;
+					}
+					continue text;
 				case 'quotation':
-					if (this.tokens[this.pos + 1].token == 'quotation' &&
-						this.tokens[this.pos + 2].token == 'quotation') {
+					if (this.read(1).token == 'quotation' &&
+						this.read(2).token == 'quotation') { // Code
+						Element element = verifyCode(parent, inspecter, filter);
+    					if (element != null) elements.add(element); else continue text;
 						elements.add(this.analyzeCode(parent));
 						break;
 					}
@@ -411,12 +568,17 @@ class Notex2 {
 			text:
 				default:
 					if (!parent.findParagraph()) {
-						elements.add(this.analyzeParagraph(parent, inspecter));
+						Element element = verifyParagraph(parent, inspecter, filter);
+    					if (element != null) {
+    						elements.add(element);
+    					} else {
+    						elements.add(this.analyzeText(parent, inspecter, filter));
+    					}
 					} else {
-						elements.add(this.analyzeText(parent, inspecter));
+						elements.add(this.analyzeText(parent, inspecter, filter));
 					}
 					if (inspecter != null) {
-        				if (inspecter(this.tokens[this.pos])) {
+        				if (inspecter(this.read())) {
         					return true;
         				}
         			}
@@ -429,7 +591,7 @@ class Notex2 {
 	/**
 	 * テキストを解析します。テキストは子要素を持つことはなく、最小の単位です。
 	 */
-	Text analyzeText(Element parent, [inspecter(token)]) {
+	Text analyzeText(Element parent, [inspecter(token), List<String> filter]) {
 		Text text = new Text();
 		text.parent = parent;
 		//this.back();
@@ -441,6 +603,11 @@ class Notex2 {
 			}
 			switch (token.token) {
 				case 'asterisk':
+					if (filter != null) {
+            			if (filter.indexOf('strong') == -1) {
+            				continue text;
+            			}
+            		}
 					this.back();
 					return true;
 				case 'open_square_bracket':
@@ -452,10 +619,15 @@ class Notex2 {
 				case 'sharp':
 					this.back();
 					return true;
+				case 'newline':
+					if (this.read(1).token == 'hyphen' ||
+						this.read(1).token == 'number') { // List
+						return true;
+					}
+					continue text;
 				case 'quotation':
-					if (this.tokens[this.pos + 1].token == 'quotation' &&
-						this.tokens[this.pos + 2].token == 'quotation') {
-						//this.back();
+					if (this.read(1).token == 'quotation' &&
+						this.read(2).token == 'quotation') { // Code
     					return true;
 					}
 					continue text;
@@ -493,9 +665,16 @@ class Notex2 {
 				case 'exclamation_mark':
 					p.children.add(this.analyzeImage(p));
 					break;
+				case 'newline':
+					if (this.read(1).token == 'hyphen' ||
+						this.read(1).token == 'number') { // List
+						this.back();
+						return true;
+					}
+					continue text;
 				case 'quotation':
-					if (this.tokens[this.pos + 1].token == 'quotation' &&
-						this.tokens[this.pos + 2].token == 'quotation') {
+					if (this.read(1).token == 'quotation' &&
+						this.read(2).token == 'quotation') { // Code
 						this.back();
 						return true;
 					}
@@ -533,12 +712,8 @@ class Notex2 {
 							secEnd = true;
 						}
 						break;
-					/*case "\r":
-						secEnd = true;
-						break;*/
 					case "newline":
 						print("["+("-"*(section.hierarchy-1))+"> セクションの開始 h:${section.hierarchy} title:${section.title}]");
-						//this.back();
 						secEnd = true;
 						break;
 					default:
@@ -646,7 +821,7 @@ class Notex2 {
 		Code code = new Code();
 		code.parent = parent;
 		this.next(3);
-		if (this.tokens[this.pos].token == 'at_mark') {
+		if (this.read().token == 'at_mark') {
 			this.next();
 			code.lang = "";
 			this.scan((Token token) {
@@ -663,8 +838,8 @@ class Notex2 {
 		this.scan((Token token) {
 			switch (token.token) {
 				case 'quotation':
-					if (this.tokens[this.pos + 1].token == 'quotation' &&
-						this.tokens[this.pos + 2].token == 'quotation') {
+					if (this.read(1).token == 'quotation' &&
+						this.read(2).token == 'quotation') {
 						this.next(3);
 						return true;
 					}
@@ -676,6 +851,24 @@ class Notex2 {
 			}
 		});
 		return code;
+	}
+	
+	EList analyzeList(Element parent) {
+		EList list = new EList();
+		list.parent = parent;
+		list.type = this.read().token == 'number' ? 'ordered' : 'unordered';
+		this.next();
+		this.scan((Token token) {
+			EListItem item = new EListItem();
+			item.children = this.analyze(list, (token) {
+				return token.token == 'newline';
+			}, ['strong', 'link']);
+			list.children.add(item);
+			if (this.read(1).token == 'newline') {
+				return true;
+			}
+		});
+		return list;
 	}
 	
 	/**
@@ -697,12 +890,19 @@ class Notex2 {
 	}
 	
 	/**
+	 * 現在のトークンリーダの位置にあるトークンを読み出します。
+	 */
+	Token read([int relative_pos = 0]) {
+		return this.tokens[this.pos + relative_pos];
+	}
+	
+	/**
 	 * ソースを走査します。トークンに出会う度に指定されたスキャナが呼ばれます。
 	 * スキャナが [true] を返した場合、そこで直ちに走査は終了し、関数が終了します。
 	 */
 	void scan(bool scanner(Token token)) {
 		while ((this.pos + 1) < this.tokens.length) {
-			Token token = this.tokens[this.pos];
+			Token token = this.read();
 			//print(token);
 			if (scanner(token) == true) {
 				break;

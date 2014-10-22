@@ -856,15 +856,21 @@ class Notex2 {
 	EList analyzeList(Element parent) {
 		EList list = new EList();
 		list.parent = parent;
-		list.type = this.read().token == 'number' ? 'ordered' : 'unordered';
+		list.type = this.read(1).token == 'number' ? 'ordered' : 'unordered';
 		this.next();
 		this.scan((Token token) {
+			if (list.type == 'ordered') {
+				this.next(2);
+			} else {
+				this.next();
+			}
 			EListItem item = new EListItem();
 			item.children = this.analyze(list, (token) {
 				return token.token == 'newline';
 			}, ['strong', 'link']);
 			list.children.add(item);
 			if (this.read(1).token == 'newline') {
+				this.next();
 				return true;
 			}
 		});

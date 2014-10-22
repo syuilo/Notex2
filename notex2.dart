@@ -7,17 +7,20 @@ interface IElement {
 library Notex2;
 
 String indent(int hierarchy) {
-	return ("  " * hierarchy);
+	return ("\t" * hierarchy);
 }
 
 abstract class Element {
+	// HTML文字列を生成します。
 	String toHtml([int hierarchy = 0]);
 }
 
 class Text extends Element {
 	String text = "";
+	Element parent;
+	
 	String toHtml([int hierarchy = 0]) {
-		return this.text.replaceAll(new RegExp(r'\n'), '</br>');
+		return this.text.replaceAll(new RegExp(r'\n\n'), '\n').replaceAll(new RegExp(r'\n'), '</br>');
 	}
 }
 
@@ -44,6 +47,7 @@ class Div extends Element {
 class Section extends Element {
 	int hierarchy;
 	String title = "";
+	Element parent;
 	List<Element> children;
 	
 	Section() {
@@ -55,11 +59,12 @@ class Section extends Element {
 		for (Element element in this.children) {
 			html += element.toHtml(hierarchy + 1);
 		}
-		return indent(hierarchy)+"<section>\n"+indent(hierarchy+1)+"<h$hierarchy>$title</h$hierarchy>\n$html"+indent(hierarchy)+"</section>\n";
+		return "\n"+indent(hierarchy)+"<section>\n"+indent(hierarchy+1)+"<h$hierarchy>$title</h$hierarchy>\n$html"+indent(hierarchy)+"</section>\n";
 	}
 }
 
 class Paragraph extends Element {
+	Element parent;
 	List<Element> children;
 	
 	Paragraph() {
@@ -76,6 +81,7 @@ class Paragraph extends Element {
 }
 
 class Strong extends Element {
+	Element parent;
 	List<Element> children;
 	
 	Strong() {
@@ -93,6 +99,7 @@ class Strong extends Element {
 
 class Link extends Element {
 	String url = "";
+	Element parent;
 	List<Element> children;
 	
 	Link() {
@@ -126,11 +133,11 @@ class Notex2 {
 	
 	Article compile() {
 		Article article = new Article();
-		article.children = this.analyze((token){return false;});
+		article.children = this.analyze(article, (token){return false;});
 		return article;
 	}
 	
-	List<Element> analyze([inspecter(token)]) {
+	List<Element> analyze(Element parent, [inspecter(token)]) {
 		List<Element> elements = new List();
 		this.scan((token) {
 			if (inspecter != null) {
@@ -140,25 +147,29 @@ class Notex2 {
 			}
 			switch (token) {
 				case '#': // Section
-					elements.add(this.analyzeSection());
+					elements.add(this.analyzeSection(parent));
 					break;
 				case '*': // Strong
-					elements.add(this.analyzeStrong());
+					elements.add(this.analyzeStrong(parent));
 					break;
 				case '[': // Link
-					elements.add(this.analyzeLink());
+					elements.add(this.analyzeLink(parent));
 					break;
 				default:
 					//elements.add(this.analyzeParagraph());
-					elements.add(this.analyzeText(inspecter));
+					elements.add(this.analyzeText(parent, inspecter));
 					break;
 			}
 		});
 		return elements;
 	}
 	
-	Text analyzeText([inspecter(token)]) {
+	/**
+	 * テキストを解析します。テキストは子要素を持つことはなく、最小の単位です。
+	 */
+	Text analyzeText(Element parent, [inspecter(token)]) {
 		Text text = new Text();
+		text.parent = parent;
 		//this.back();
 		this.scan((token) {
 			if (inspecter != null) {
@@ -184,8 +195,12 @@ class Notex2 {
 		return text;
 	}
 	
-	Section analyzeSection() {
+	/**
+	 * セクションを解析します。
+	 */
+	Section analyzeSection(Element parent) {
 		Section section = new Section();
+		section.parent = parent;
 		section.hierarchy = 0;
 		bool secEnd = false;
 		
@@ -212,7 +227,7 @@ class Notex2 {
 						break;
 				}
 			} else {
-				section.children = this.analyze((token) {
+				section.children = this.analyze(section, (token) {
 					if (token == '#') {
 						// 次に始まるセクションの階層を調べる
 						// もし自分より上か同階層なら自分のセクションは終了
@@ -258,21 +273,22 @@ class Notex2 {
 					this.back();
 					return true;
 				case '*':
-					p.children.add(this.analyzeStrong());
+					p.children.add(this.analyzeStrong(p));
 					break;
 				case '[':
-					p.children.add(this.analyzeLink());
+					p.children.add(this.analyzeLink(p));
 					break;
 				default:
-					p.children.add(this.analyzeText());
+					p.children.add(this.analyzeText(p));
 					break;
 			}
 		});
 		return p;
 	}
 	
-	Strong analyzeStrong() {
+	Strong analyzeStrong(Element parent) {
 		Strong strong = new Strong();
+		strong.parent = parent;
 		this.next();
 		this.scan((token) {
 			switch (token) {
@@ -280,7 +296,7 @@ class Notex2 {
 					this.next();
 					return true;
 				default:
-					strong.children.add(this.analyzeText());
+					strong.children.add(this.analyzeText(strong));
 					this.next();
 					return true;
 			}
@@ -288,16 +304,17 @@ class Notex2 {
 		return strong;
 	}
 	
-	Link analyzeLink() {
+	Link analyzeLink(Element parent) {
 		//this.back();
 		Link link = new Link();
+		link.parent = parent;
 		this.scan((token) {
 			switch (token) {
 				case '\$':
 					this.next();
 					return true;
 				default:
-					link.children = this.analyze((token) {
+					link.children = this.analyze(link, (token) {
 						return token == ']';
 					});
 					return true;
@@ -316,6 +333,9 @@ class Notex2 {
 		return link;
 	}
 	
+	/**
+	 * トークンリーダを指定した分だけ進めます。
+	 */
 	void next([int step = 1]) {
 		if ((this.pos + step) < this.source.length) {
 			this.pos += step;
@@ -324,11 +344,18 @@ class Notex2 {
 		}
 	}
 	
+	/**
+	 * トークンリーダを指定した分だけ巻き戻します。
+	 */
 	void back([int step = 1]) {
 		this.pos -= step;
 	}
 
-	scan(bool scanner(String token)) {
+	/**
+	 * ソースを走査します。トークンに出会う度に指定されたスキャナが呼ばれます。
+	 * スキャナが true を返した場合、そこで直ちに走査は終了し、関数が終了します。
+	 */
+	void scan(bool scanner(String token)) {
 		while ((this.pos + 1) != this.source.length) {
 			String token = this.source[this.pos];
 			//print(token);

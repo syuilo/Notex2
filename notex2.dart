@@ -149,16 +149,44 @@ class Notex2 {
 					elements.add(this.analyzeLink());
 					break;
 				default:
-					elements.add(this.analyzeParagraph());
+					//elements.add(this.analyzeParagraph());
+					elements.add(this.analyzeText(inspecter));
 					break;
 			}
 		});
 		return elements;
 	}
 	
+	Text analyzeText([inspecter(token)]) {
+		Text text = new Text();
+		//this.back();
+		this.scan((token) {
+			if (inspecter != null) {
+				if (inspecter(token)) {
+					return true;
+				}
+			}
+			switch (token) {
+				case '*':
+					this.back();
+					return true;
+				case '[':
+					this.back();
+					return true;
+				case '#':
+					this.back();
+					return true;
+				default:
+					text.text += token;
+					break;
+			}
+		});
+		return text;
+	}
+	
 	Section analyzeSection() {
 		Section section = new Section();
-		section.hierarchy = 1;
+		section.hierarchy = 0;
 		bool secEnd = false;
 		
 		this.scan((token) {
@@ -176,7 +204,7 @@ class Notex2 {
 						break;*/
 					case "\n":
 						print("["+("-"*(section.hierarchy-1))+"> セクションの開始 h:${section.hierarchy} title:${section.title}]");
-						this.back(1);
+						//this.back();
 						secEnd = true;
 						break;
 					default:
@@ -191,6 +219,7 @@ class Notex2 {
 						
 						int nextSectionHierarchy = 1;
 						int step = 0;
+						this.next();
 						this.scan((String secToken) {
 							step++;
 							if (secToken == '#') {
@@ -220,29 +249,7 @@ class Notex2 {
 		return section;	
 	}
 	
-	Text analyzeText() {
-		Text text = new Text();
-		this.back();
-		this.scan((token) {
-			switch (token) {
-				case '*':
-					this.back();
-					return true;
-				case '[':
-					this.back();
-					return true;
-				case '#':
-					this.back();
-					return true;
-				default:
-					text.text += token;
-					break;
-			}
-		});
-		return text;
-	}
-	
-	Paragraph analyzeParagraph() {
+	Paragraph _analyzeParagraph() {
 		Paragraph p = new Paragraph();
 		this.back();
 		this.scan((token) {
@@ -266,6 +273,7 @@ class Notex2 {
 	
 	Strong analyzeStrong() {
 		Strong strong = new Strong();
+		this.next();
 		this.scan((token) {
 			switch (token) {
 				case '*':
@@ -281,7 +289,7 @@ class Notex2 {
 	}
 	
 	Link analyzeLink() {
-		this.back();
+		//this.back();
 		Link link = new Link();
 		this.scan((token) {
 			switch (token) {
@@ -295,7 +303,7 @@ class Notex2 {
 					return true;
 			}
 		});
-		/*this.scan((token) {
+		this.scan((token) {
 			switch (token) {
 				case ')':
 					this.next();
@@ -304,12 +312,16 @@ class Notex2 {
 					link.url += token;
 					break;
 			}
-		});*/
+		});
 		return link;
 	}
 	
 	void next([int step = 1]) {
-		this.pos += step;
+		if ((this.pos + step) < this.source.length) {
+			this.pos += step;
+		} else {
+			this.pos = this.source.length-1;
+		}
 	}
 	
 	void back([int step = 1]) {
@@ -317,13 +329,13 @@ class Notex2 {
 	}
 
 	scan(bool scanner(String token)) {
-		while (this.pos != this.source.length) {
+		while ((this.pos + 1) != this.source.length) {
 			String token = this.source[this.pos];
 			//print(token);
-			this.next();
 			if (scanner(token) == true) {
 				break;
-			}
+			}	
+			this.next();
 		}
 	}
 }

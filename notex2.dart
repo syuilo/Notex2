@@ -146,6 +146,22 @@ class Link extends Element {
 	}
 }
 
+class Image extends Element {
+	String url = "";
+	Element parent;
+	
+	Image() {
+	}
+	
+	bool findParagraph() {
+		return this.parent.findParagraph();
+	}
+	
+	String toHtml([int hierarchy = 0]) {
+		return "<img src=\"$url\" alt=\"image\"/>";
+	}
+}
+
 class Notex2 {
 	String source;
 	int pos = 0; // トークンリーダの位置
@@ -189,6 +205,9 @@ class Notex2 {
 				case '[': // Link
 					elements.add(this.analyzeLink(parent));
 					break;
+				case '!': // Image
+					elements.add(this.analyzeImage(parent));
+					break;
 				default:
 					if (!parent.findParagraph()) {
 						elements.add(this.analyzeParagraph(parent, inspecter));
@@ -226,6 +245,9 @@ class Notex2 {
 				case '[':
 					this.back();
 					return true;
+				case '!':
+					this.back();
+					return true;
 				case '#':
 					this.back();
 					return true;
@@ -258,6 +280,9 @@ class Notex2 {
 					break;
 				case '[':
 					p.children.add(this.analyzeLink(p));
+					break;
+				case '!':
+					p.children.add(this.analyzeImage(p));
 					break;
 				default:
 					p.children.add(this.analyzeText(p, inspecter));
@@ -359,7 +384,6 @@ class Notex2 {
 	}
 	
 	Link analyzeLink(Element parent) {
-		//this.back();
 		Link link = new Link();
 		link.parent = parent;
 		this.next();
@@ -384,6 +408,22 @@ class Notex2 {
 		return link;
 	}
 	
+	Image analyzeImage(Element parent) {
+		Image img = new Image();
+		img.parent = parent;
+		this.next();
+		this.scan((token) {
+			switch (token) {
+				case ')':
+					return true;
+				default:
+					img.url += token;
+					break;
+			}
+		});
+		return img;
+	}
+	
 	/**
 	 * トークンリーダを指定した分だけ進めます。
 	 */
@@ -400,10 +440,6 @@ class Notex2 {
 	 */
 	void back([int step = 1]) {
 		this.pos -= step;
-	}
-	
-	void idling() {
-		
 	}
 	
 	/**

@@ -12,7 +12,7 @@ void scream() {
 
 String indent(int hierarchy) {
 	//return ("\t" * hierarchy);
-	return ("^   " * hierarchy);
+	return ("    " * hierarchy);
 }
 
 /**
@@ -225,6 +225,27 @@ class Code extends Element {
 	}
 }
 
+class Blockquote extends Element {
+	Element parent;
+	List<Element> children;
+	
+	Blockquote() {
+		this.children = new List();
+	}
+	
+	bool findParagraph() {
+		return this.parent.findParagraph();
+	}
+	
+	String toHtml([int hierarchy = 0]) {
+		String html = "";
+		for (Element element in this.children) {
+			html += element.toHtml(hierarchy + 1);
+		}
+		return indent(hierarchy) + "<blockquote>\n" + indent(hierarchy + 1) + html  + "\n" + indent(hierarchy) + "</blockquote>\n";
+	}
+}
+
 class EList extends Element {
 	String type = "unordered"; // unordered or ordered
 	Element parent;
@@ -288,7 +309,7 @@ class Notex2 {
 	}
 	
 	Article compile() {
-		this.tokens = this.lexicalAnalyzer();
+		this.tokens = this.lexicalgenerater();
 		Article article = new Article();
 		article.children = this.analyze(article, (token){return false;});
 		return article;
@@ -297,7 +318,7 @@ class Notex2 {
 	/**
 	 * 字句解析器。トークンリストを生成します。
 	 */
-	List<Token> lexicalAnalyzer() {
+	List<Token> lexicalgenerater() {
 		List<Token> tokens = new List();
 		int pos = 0;
 		int id = 0;
@@ -477,83 +498,92 @@ class Notex2 {
 			var token = tokeniza();
 			token.id = id;
 			id++;
-			print("${token.token}\t: ${token.lexeme}");
+			print("${token.id}\t${token.token}\t: ${token.lexeme}");
 			tokens.add(token);
 		}
 		
 		return tokens;
 	}
 	
-	Element verifySection(Element parent, [inspecter(Token token), List<String> filter]) {
+	Element analyzeSection(Element parent, [inspecter(Token token), List<String> filter]) {
 		if (filter != null) {
 			if (filter.indexOf('section') > -1) {
 				return null;
 			}
 		}
-		return this.analyzeSection(parent);
+		return this.generateSection(parent);
 	}
 	
-	Element verifyParagraph(Element parent, [inspecter(Token token), List<String> filter]) {
+	Element analyzeParagraph(Element parent, [inspecter(Token token), List<String> filter]) {
 		if (filter != null) {
 			if (filter.indexOf('paragraph') > -1) {
 				return null;
 			}
 		}
-		return this.analyzeParagraph(parent);
+		return this.generateParagraph(parent);
 	}
 	
-	Element verifyStrong(Element parent, [inspecter(Token token), List<String> filter]) {
+	Element analyzeStrong(Element parent, [inspecter(Token token), List<String> filter]) {
 		if (filter != null) {
 			if (filter.indexOf('strong') > -1) {
 				return null;
 			}
 		}
-		return this.analyzeStrong(parent, inspecter, filter);
+		return this.generateStrong(parent, inspecter, filter);
 	}
 	
-	Element verifyStrike(Element parent, [inspecter(Token token), List<String> filter]) {
+	Element analyzeStrike(Element parent, [inspecter(Token token), List<String> filter]) {
 		if (filter != null) {
 			if (filter.indexOf('strike') > -1) {
 				return null;
 			}
 		}
-		return this.analyzeStrike(parent, inspecter, filter);
+		return this.generateStrike(parent, inspecter, filter);
 	}
 	
-	Element verifyLink(Element parent, [inspecter(Token token), List<String> filter]) {
+	Element analyzeLink(Element parent, [inspecter(Token token), List<String> filter]) {
 		if (filter != null) {
 			if (filter.indexOf('link') > -1) {
 				return null;
 			}
 		}
-		return this.analyzeLink(parent, inspecter, filter);
+		return this.generateLink(parent, inspecter, filter);
 	}
 	
-	Element verifyImage(Element parent, [inspecter(Token token), List<String> filter]) {
+	Element analyzeImage(Element parent, [inspecter(Token token), List<String> filter]) {
 		if (filter != null) {
 			if (filter.indexOf('image') > -1) {
 				return null;
 			}
 		}
-		return this.analyzeImage(parent);
+		return this.generateImage(parent);
 	}
 	
-	Element verifyList(Element parent, [inspecter(Token token), List<String> filter]) {
+	Element analyzeList(Element parent, [inspecter(Token token), List<String> filter]) {
 		if (filter != null) {
 			if (filter.indexOf('list') > -1) {
 				return null;
 			}
 		}
-		return this.analyzeList(parent);
+		return this.generateList(parent);
 	}
 	
-	Element verifyCode(Element parent, [inspecter(Token token), List<String> filter]) {
+	Element analyzeBlockquote(Element parent, [inspecter(Token token), List<String> filter]) {
+		if (filter != null) {
+			if (filter.indexOf('blockquote') > -1) {
+				return null;
+			}
+		}
+		return this.generateBlockquote(parent);
+	}
+	
+	Element analyzeCode(Element parent, [inspecter(Token token), List<String> filter]) {
 		if (filter != null) {
 			if (filter.indexOf('code') > -1) {
 				return null;
 			}
 		}
-		return this.analyzeCode(parent);
+		return this.generateCode(parent);
 	}
 	
 	/**
@@ -576,7 +606,7 @@ class Notex2 {
 			}
 			switch (token.token) {
 				case 'sharp': // Section
-					Element element = verifySection(parent, inspecter, filter);
+					Element element = analyzeSection(parent, inspecter, filter);
 					if (element != null) {
 						elements.add(element);
 						this.next();
@@ -585,7 +615,7 @@ class Notex2 {
 					}
 					break;
 				case 'asterisk': // Strong
-					Element element = verifyStrong(parent, inspecter, filter);
+					Element element = analyzeStrong(parent, inspecter, filter);
 					if (element != null) {
 						elements.add(element);
 						this.next();
@@ -595,7 +625,7 @@ class Notex2 {
 					break;
 				case 'tilde':
 					if (this.read(1).token == 'tilde') { // Strike
-						Element element = verifyStrike(parent, inspecter, filter);
+						Element element = analyzeStrike(parent, inspecter, filter);
 						if (element != null) {
         						elements.add(element);
         						this.next();
@@ -606,7 +636,7 @@ class Notex2 {
 					}
 					continue text;
 				case 'open_square_bracket': // Link
-					Element element = verifyLink(parent, inspecter, filter);
+					Element element = analyzeLink(parent, inspecter, filter);
 					if (element != null) {
 						elements.add(element);
 						this.next();
@@ -616,7 +646,7 @@ class Notex2 {
 					break;
 				case 'exclamation_mark': // Image
 					if (this.read(1).token == 'open_bracket') { // Image
-						Element element = verifyImage(parent, inspecter, filter);
+						Element element = analyzeImage(parent, inspecter, filter);
 						if (element != null) {
         						elements.add(element);
         						this.next();
@@ -629,7 +659,17 @@ class Notex2 {
 				case 'newline':
 					if ((this.read(1).token == 'hyphen') ||
 						(this.read(1).token == 'number' && this.read(2).token == 'period')) { // List
-						Element element = verifyList(parent, inspecter, filter);
+						Element element = analyzeList(parent, inspecter, filter);
+						if (element != null) {
+        						elements.add(element);
+        						this.next();
+        					} else {
+        						continue text;
+        					}
+						break;
+					}
+					if (this.read(1).token == 'newline' && this.read(2).token == 'less_than') { // Blockquote
+						Element element = analyzeBlockquote(parent, inspecter, filter);
 						if (element != null) {
         						elements.add(element);
         						this.next();
@@ -642,7 +682,7 @@ class Notex2 {
 				case 'quotation':
 					if (this.read(1).token == 'quotation' &&
 						this.read(2).token == 'quotation') { // Code
-						Element element = verifyCode(parent, inspecter, filter);
+						Element element = analyzeCode(parent, inspecter, filter);
 						if (element != null) {
         						elements.add(element);
         						this.next();
@@ -655,15 +695,15 @@ class Notex2 {
 			text:
 				default:
 					if (!parent.findParagraph()) {
-						Element element = verifyParagraph(parent, inspecter, filter);
+						Element element = analyzeParagraph(parent, inspecter, filter);
 	    					if (element != null) {
 	    						elements.add(element);
 	    					} else {
-	    						elements.add(this.analyzeText(parent, inspecter, filter));
+	    						elements.add(this.generateText(parent, inspecter, filter));
 	    						this.next();
 	    					}
 					} else {
-						elements.add(this.analyzeText(parent, inspecter, filter));
+						elements.add(this.generateText(parent, inspecter, filter));
 						this.next();
 					}
 					break;
@@ -675,10 +715,9 @@ class Notex2 {
 	/**
 	 * テキストを解析します。テキストは子要素を持つことはなく、最小の単位です。
 	 */
-	Text analyzeText(Element parent, [inspecter(token), List<String> filter]) {
+	Text generateText(Element parent, [inspecter(token), List<String> filter]) {
 		Text text = new Text();
 		text.parent = parent;
-		//this.back();
 		this.scan((Token token) {
 			if (inspecter != null) {
 				if (inspecter(token)) {
@@ -727,7 +766,7 @@ class Notex2 {
 	/**
 	 * Paragraphを解析します。
 	 */
-	Paragraph analyzeParagraph(Element parent, [inspecter(token)]) {
+	Paragraph generateParagraph(Element parent, [inspecter(token)]) {
 		Paragraph p = new Paragraph();
 		p.parent = parent;
 		p.children = this.analyze(p, (token) {
@@ -737,6 +776,9 @@ class Notex2 {
 				case 'newline':
 					if (this.read(1).token == 'hyphen' ||
 						(this.read(1).token == 'number' && this.read(2).token == 'period')) { // List
+						return true;
+					}
+					if (this.read(1).token == 'newline' && this.read(2).token == 'less_than') {
 						return true;
 					}
 					break;
@@ -762,7 +804,7 @@ class Notex2 {
 	/**
 	 * セクションを解析します。
 	 */
-	Section analyzeSection(Element parent) {
+	Section generateSection(Element parent) {
 		Section section = new Section();
 		section.parent = parent;
 		section.hierarchy = 0;
@@ -830,7 +872,7 @@ class Notex2 {
 	/**
 	 * Strongを解析します。
 	 */
-	Strong analyzeStrong(Element parent, [inspecter(token), List<String> filter]) {
+	Strong generateStrong(Element parent, [inspecter(token), List<String> filter]) {
 		Strong strong = new Strong();
 		strong.parent = parent;
 		this.next();
@@ -848,7 +890,7 @@ class Notex2 {
 	/**
 	 * Strikeを解析します。
 	 */
-	Strike analyzeStrike(Element parent, [inspecter(token), List<String> filter]) {
+	Strike generateStrike(Element parent, [inspecter(token), List<String> filter]) {
 		Strike strike = new Strike();
 		strike.parent = parent;
 		this.next(2);
@@ -867,7 +909,7 @@ class Notex2 {
 	/**
 	 * リンクを解析します。
 	 */
-	Link analyzeLink(Element parent, [inspecter(token), List<String> filter]) {
+	Link generateLink(Element parent, [inspecter(token), List<String> filter]) {
 		Link link = new Link();
 		link.parent = parent;
 		this.next();
@@ -891,7 +933,10 @@ class Notex2 {
 		return link;
 	}
 	
-	Image analyzeImage(Element parent) {
+	/**
+	 * Imgを生成します。
+	 */
+	Image generateImage(Element parent) {
 		Image img = new Image();
 		img.parent = parent;
 		this.next(2);
@@ -909,9 +954,27 @@ class Notex2 {
 	}
 	
 	/**
+	 * Blockquoteを解析します。
+	 */
+	Blockquote generateBlockquote(Element parent, [inspecter(token), List<String> filter]) {
+		Blockquote blockquote = new Blockquote();
+		blockquote.parent = parent;
+		this.next(3);
+		if (filter == null) {
+			filter = ['paragraph'];
+		} else {
+			filter.add('paragraph');
+		}
+		blockquote.children = this.analyze(blockquote, (token) {
+			return (token.token == 'newline' && this.tokens[token.id + 1].token != 'less_than');
+		}, filter);
+		return blockquote;
+	}
+	
+	/**
 	 * コードを解析します。
 	 */
-	Code analyzeCode(Element parent) {
+	Code generateCode(Element parent) {
 		Code code = new Code();
 		code.parent = parent;
 		this.next(3);
@@ -949,7 +1012,10 @@ class Notex2 {
 		return code;
 	}
 	
-	EList analyzeList(Element parent) {
+	/**
+	 * リストを生成します。
+	 */
+	EList generateList(Element parent) {
 		EList list = new EList();
 		list.parent = parent;
 		list.type = this.read(1).token == 'number' ? 'ordered' : 'unordered';

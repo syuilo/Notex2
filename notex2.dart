@@ -12,13 +12,14 @@ void scream() {
 
 String indent(int hierarchy) {
 	//return ("\t" * hierarchy);
-	return ("    " * hierarchy);
+	return ("^   " * hierarchy);
 }
 
 /**
  * Token
  */
 class Token {
+	int id = 0;
 	String token = "";
 	String lexeme = "";
 }
@@ -45,10 +46,10 @@ class Text extends Element {
 	
 	String toHtml([int hierarchy = 0]) {
 		String html = this.text;
-		html = html.replaceAll(new RegExp(r'\n\n'), '\n');
-		html = html.replaceAll(new RegExp(r'^\n'), '');
-		html = html.replaceAll(new RegExp(r'\n$'), '');
-		html = html.replaceAll('\n', '</br>');
+		//html = html.replaceAll(new RegExp(r'\n\n'), '\n');
+		//html = html.replaceAll(new RegExp(r'^\n'), '');
+		//html = html.replaceAll(new RegExp(r'\n$'), '');
+		//html = html.replaceAll('\n', '</br>');
 		return html;
 	}
 }
@@ -121,6 +122,8 @@ class Paragraph extends Element {
 		for (Element element in this.children) {
 			html += element.toHtml();
 		}
+		html = html.trim();
+		html = html.replaceAll('\n', '</br>');
 		return indent(hierarchy) + "<p>$html</p>\n";
 	}
 }
@@ -143,6 +146,27 @@ class Strong extends Element {
 			html += element.toHtml();
 		}
 		return "<strong>$html</strong>";
+	}
+}
+
+class Strike extends Element {
+	Element parent;
+	List<Element> children;
+	
+	Strike() {
+		this.children = new List();
+	}
+	
+	bool findParagraph() {
+		return this.parent.findParagraph();
+	}
+	
+	String toHtml([int hierarchy = 0]) {
+		String html = "";
+		for (Element element in this.children) {
+			html += element.toHtml();
+		}
+		return "<del>$html</del>";
 	}
 }
 
@@ -256,7 +280,6 @@ class Notex2 {
 	List<Token> tokens;
 	int pos = 0; // トークンリーダの位置
 	int hierarchy = 0; // 現在の階層
-	String tableOfContents = "";
 	int sectionCount = 0;
 	
 	Notex2(String source) {
@@ -277,6 +300,7 @@ class Notex2 {
 	List<Token> lexicalAnalyzer() {
 		List<Token> tokens = new List();
 		int pos = 0;
+		int id = 0;
 		Token tokeniza() {
 			Token token = new Token();
 			bool text = false;
@@ -374,6 +398,14 @@ class Notex2 {
 							pos--;
 						}
 						return token;
+					case '~':
+						if (!text) {
+							token.token = 'tilde';
+							token.lexeme = char;
+						} else {
+							pos--;
+						}
+						return token;
 					case '(':
 						if (!text) {
 							token.token = 'open_bracket';
@@ -443,6 +475,8 @@ class Notex2 {
 		
 		while ((pos + 1) != this.source.length) {
 			var token = tokeniza();
+			token.id = id;
+			id++;
 			print("${token.token}\t: ${token.lexeme}");
 			tokens.add(token);
 		}
@@ -475,6 +509,15 @@ class Notex2 {
 			}
 		}
 		return this.analyzeStrong(parent, inspecter, filter);
+	}
+	
+	Element verifyStrike(Element parent, [inspecter(Token token), List<String> filter]) {
+		if (filter != null) {
+			if (filter.indexOf('strike') > -1) {
+				return null;
+			}
+		}
+		return this.analyzeStrike(parent, inspecter, filter);
 	}
 	
 	Element verifyLink(Element parent, [inspecter(Token token), List<String> filter]) {
@@ -534,25 +577,65 @@ class Notex2 {
 			switch (token.token) {
 				case 'sharp': // Section
 					Element element = verifySection(parent, inspecter, filter);
-					if (element != null) elements.add(element); else continue text;
+					if (element != null) {
+						elements.add(element);
+						this.next();
+					} else {
+						continue text;
+					}
 					break;
 				case 'asterisk': // Strong
 					Element element = verifyStrong(parent, inspecter, filter);
-					if (element != null) elements.add(element); else continue text;
+					if (element != null) {
+						elements.add(element);
+						this.next();
+					} else {
+						continue text;
+					}
 					break;
+				case 'tilde':
+					if (this.read(1).token == 'tilde') { // Strike
+						Element element = verifyStrike(parent, inspecter, filter);
+						if (element != null) {
+        						elements.add(element);
+        						this.next();
+        					} else {
+        						continue text;
+        					}
+						break;
+					}
+					continue text;
 				case 'open_square_bracket': // Link
 					Element element = verifyLink(parent, inspecter, filter);
-					if (element != null) elements.add(element); else continue text;
+					if (element != null) {
+						elements.add(element);
+						this.next();
+					} else {
+						continue text;
+					}
 					break;
 				case 'exclamation_mark': // Image
-					Element element = verifyImage(parent, inspecter, filter);
-					if (element != null) elements.add(element); else continue text;
-					break;
+					if (this.read(1).token == 'open_bracket') { // Image
+						Element element = verifyImage(parent, inspecter, filter);
+						if (element != null) {
+        						elements.add(element);
+        						this.next();
+        					} else {
+        						continue text;
+        					}
+						break;
+					}
+					continue text;
 				case 'newline':
-					if (this.read(1).token == 'hyphen' ||
-						this.read(1).token == 'number') { // List
+					if ((this.read(1).token == 'hyphen') ||
+						(this.read(1).token == 'number' && this.read(2).token == 'period')) { // List
 						Element element = verifyList(parent, inspecter, filter);
-    					if (element != null) elements.add(element); else continue text;
+						if (element != null) {
+        						elements.add(element);
+        						this.next();
+        					} else {
+        						continue text;
+        					}
 						break;
 					}
 					continue text;
@@ -560,8 +643,12 @@ class Notex2 {
 					if (this.read(1).token == 'quotation' &&
 						this.read(2).token == 'quotation') { // Code
 						Element element = verifyCode(parent, inspecter, filter);
-    					if (element != null) elements.add(element); else continue text;
-						elements.add(this.analyzeCode(parent));
+						if (element != null) {
+        						elements.add(element);
+        						this.next();
+        					} else {
+        						continue text;
+        					}
 						break;
 					}
 					continue text;
@@ -569,19 +656,16 @@ class Notex2 {
 				default:
 					if (!parent.findParagraph()) {
 						Element element = verifyParagraph(parent, inspecter, filter);
-    					if (element != null) {
-    						elements.add(element);
-    					} else {
-    						elements.add(this.analyzeText(parent, inspecter, filter));
-    					}
+	    					if (element != null) {
+	    						elements.add(element);
+	    					} else {
+	    						elements.add(this.analyzeText(parent, inspecter, filter));
+	    						this.next();
+	    					}
 					} else {
 						elements.add(this.analyzeText(parent, inspecter, filter));
+						this.next();
 					}
-					if (inspecter != null) {
-        				if (inspecter(this.read())) {
-        					return true;
-        				}
-        			}
 					break;
 			}
 		});
@@ -604,20 +688,19 @@ class Notex2 {
 			switch (token.token) {
 				case 'asterisk':
 					if (filter != null) {
-            			if (filter.indexOf('strong') > -1) {
-            				continue text;
-            			}
-            		}
-					this.back();
+		            			if (filter.indexOf('strong') > -1) {
+		            				continue text;
+		            			}
+		            		}
 					return true;
 				case 'open_square_bracket':
-					this.back();
 					return true;
 				case 'exclamation_mark':
-					this.back();
-					return true;
+					if (this.read(1).token == 'open_square_bracket') {
+						return true;
+					}
+					continue text;
 				case 'sharp':
-					this.back();
 					return true;
 				case 'newline':
 					if (this.read(1).token == 'hyphen' ||
@@ -636,6 +719,7 @@ class Notex2 {
 					text.text = token.lexeme;
 					return true;
 			}
+			this.next();
 		});
 		return text;
 	}
@@ -643,52 +727,34 @@ class Notex2 {
 	/**
 	 * Paragraphを解析します。
 	 */
-	Element analyzeParagraph(Element parent, [inspecter(token)]) {
+	Paragraph analyzeParagraph(Element parent, [inspecter(token)]) {
 		Paragraph p = new Paragraph();
 		p.parent = parent;
-		this.scan((Token token) {
-			if (inspecter != null) {
-				if (inspecter(token)) {
-					return true;
-				}
-			}
+		p.children = this.analyze(p, (token) {
 			switch (token.token) {
 				case 'sharp':
-					this.back();
 					return true;
-				case 'asterisk':
-					p.children.add(this.analyzeStrong(p));
-					break;
-				case 'open_square_bracket':
-					p.children.add(this.analyzeLink(p));
-					break;
-				case 'exclamation_mark':
-					p.children.add(this.analyzeImage(p));
-					break;
 				case 'newline':
 					if (this.read(1).token == 'hyphen' ||
-						this.read(1).token == 'number') { // List
-						this.back();
+						(this.read(1).token == 'number' && this.read(2).token == 'period')) { // List
 						return true;
 					}
-					continue text;
+					break;
 				case 'quotation':
 					if (this.read(1).token == 'quotation' &&
 						this.read(2).token == 'quotation') { // Code
-						this.back();
 						return true;
 					}
-					continue text;
-			text:
-				default:
-					p.children.add(this.analyzeText(p, inspecter));
-					if (inspecter != null) {
-        				if (inspecter(this.read())) {
-        					return true;
-        				}
-        			}
 					break;
+				default:
+					if (inspecter != null) {
+                				if (inspecter(token)) {
+                					return true;
+                				}
+                			}
+					return false;
 			}
+			return false;
 		});
 		return p;
 	}
@@ -730,16 +796,19 @@ class Notex2 {
 						int step = 0;
 						this.next();
 						this.scan((Token secToken) {
-							step++;
 							if (secToken.token == 'sharp') {
 								nextSectionHierarchy++;
+								step++;
+								this.next();
 								return false;
 							} else {
 								return true;
 							}
+							step++;
+							this.next();
 						});
 						// 階層を調べるために進めたトークンリーダを元の位置まで巻き戻す
-						this.back(step);
+						this.back(step + 1);
 						if (nextSectionHierarchy <= section.hierarchy) {
 							this.back();
 							return true;
@@ -752,6 +821,7 @@ class Notex2 {
 				});
 				return true;
 			}
+			this.next();
 		});
 		print("["+("-"*(section.hierarchy-1))+"< セクションの終了 h:${section.hierarchy} title:${section.title}]");
 		return section;	
@@ -770,12 +840,28 @@ class Notex2 {
 			filter.add('paragraph');
 		}
 		strong.children = this.analyze(strong, (token) {
-			//if (inspecter != null) {
-			//	return inspecter(token);
-			//}
 			return token.token == 'asterisk';
 		}, filter);
 		return strong;
+	}
+	
+	/**
+	 * Strikeを解析します。
+	 */
+	Strike analyzeStrike(Element parent, [inspecter(token), List<String> filter]) {
+		Strike strike = new Strike();
+		strike.parent = parent;
+		this.next(2);
+		if (filter == null) {
+			filter = ['paragraph'];
+		} else {
+			filter.add('paragraph');
+		}
+		strike.children = this.analyze(strike, (token) {
+			return (token.token == 'tilde' && this.tokens[token.id + 1].token == 'tilde');
+		}, filter);
+		this.next();
+		return strike;
 	}
 	
 	/**
@@ -787,16 +873,11 @@ class Notex2 {
 		this.next();
 		this.scan((Token token) {
 			link.children = this.analyze(link, (token) {
-				//if (inspecter != null) {
-    			//	return inspecter(token);
-    			//}
 				return token.token == 'close_square_bracket';
 			}, filter);
 			return true;
 		});
-		// URLが見つかるまで空回し
-		this.scan((Token token){return token.token == 'open_bracket';});
-		this.next();
+		this.next(2);
 		this.scan((Token token) {
 			switch (token.token) {
 				case 'close_bracket':
@@ -805,6 +886,7 @@ class Notex2 {
 					link.url += token.lexeme;
 					break;
 			}
+			this.next();
 		});
 		return link;
 	}
@@ -812,7 +894,7 @@ class Notex2 {
 	Image analyzeImage(Element parent) {
 		Image img = new Image();
 		img.parent = parent;
-		this.next();
+		this.next(2);
 		this.scan((Token token) {
 			switch (token.token) {
 				case 'close_bracket':
@@ -821,12 +903,15 @@ class Notex2 {
 					img.url += token.lexeme;
 					break;
 			}
+			this.next();
 		});
 		return img;
 	}
 	
+	/**
+	 * コードを解析します。
+	 */
 	Code analyzeCode(Element parent) {
-		scream();
 		Code code = new Code();
 		code.parent = parent;
 		this.next(3);
@@ -842,6 +927,7 @@ class Notex2 {
     					code.lang += token.lexeme;
     					break;
     			}
+    			this.next();
     		});
 		}
 		this.scan((Token token) {
@@ -858,6 +944,7 @@ class Notex2 {
 					code.code += token.lexeme;
 					break;
 			}
+			this.next();
 		});
 		return code;
 	}
@@ -882,6 +969,7 @@ class Notex2 {
 				this.next();
 				return true;
 			}
+			this.next();
 		});
 		return list;
 	}
@@ -922,7 +1010,6 @@ class Notex2 {
 			if (scanner(token) == true) {
 				break;
 			}	
-			this.next();
 		}
 	}
 }

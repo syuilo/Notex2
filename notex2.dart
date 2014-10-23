@@ -7,7 +7,7 @@
 library Notex2;
 
 void scream() {
-	print("うー！にゃー！" * 4);
+	//print("うー！にゃー！" * 4);
 }
 
 String indent(int hierarchy) {
@@ -304,7 +304,7 @@ class Notex2 {
 	int sectionCount = 0;
 	
 	Notex2(String source) {
-		this.source = source;
+		this.source = source + "\nEOF";
 		this.tokens = new List();
 	}
 	
@@ -329,6 +329,14 @@ class Notex2 {
 				String char = this.source[pos];
 				pos++;
 				switch (char) {
+					case '\\':
+						if (!text) {
+							token.token = 'escape';
+							token.lexeme = char;
+						} else {
+							pos--;
+						}
+						return token;
 					case ' ':
 						if (!text) {
 							token.token = 'space';
@@ -498,7 +506,7 @@ class Notex2 {
 			var token = tokeniza();
 			token.id = id;
 			id++;
-			print("${token.id}\t${token.token}\t: ${token.lexeme}");
+			//print("${token.id}\t${token.token}\t: ${token.lexeme}");
 			tokens.add(token);
 		}
 		
@@ -605,6 +613,14 @@ class Notex2 {
 				}
 			}
 			switch (token.token) {
+				case 'escape':
+					this.next();
+					Text text = new Text();
+                        		text.parent = parent;
+                        		text.text = this.read().lexeme;
+					elements.add(text);
+					this.next();
+					break;
 				case 'sharp': // Section
 					Element element = analyzeSection(parent, inspecter, filter);
 					if (element != null) {
@@ -821,7 +837,7 @@ class Notex2 {
 						}
 						break;
 					case "newline":
-						print("["+("-"*(section.hierarchy-1))+"> セクションの開始 h:${section.hierarchy} title:${section.title}]");
+						//print("["+("-"*(section.hierarchy-1))+"> セクションの開始 h:${section.hierarchy} title:${section.title}]");
 						secEnd = true;
 						break;
 					default:
@@ -865,7 +881,7 @@ class Notex2 {
 			}
 			this.next();
 		});
-		print("["+("-"*(section.hierarchy-1))+"< セクションの終了 h:${section.hierarchy} title:${section.title}]");
+		//print("["+("-"*(section.hierarchy-1))+"< セクションの終了 h:${section.hierarchy} title:${section.title}]");
 		return section;	
 	}
 	
@@ -1047,6 +1063,7 @@ class Notex2 {
 		if ((this.pos + step) < this.tokens.length) {
 			this.pos += step;
 		} else {
+			//throw new Exception("Reader over");
 			this.pos = this.tokens.length - 1;
 		}
 	}
@@ -1072,7 +1089,7 @@ class Notex2 {
 	void scan(bool scanner(Token token)) {
 		while ((this.pos + 1) < this.tokens.length) {
 			Token token = this.read();
-			//print(token);
+			////print(token);
 			if (scanner(token) == true) {
 				break;
 			}	

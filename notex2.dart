@@ -310,7 +310,6 @@ class Notex2 {
 	String source;
 	List<Token> tokens;
 	int pos = 0; // トークンリーダの位置
-	int hierarchy = 0; // 現在の階層
 	int sectionCount = 0;
 	
 	Notex2(String source) {
@@ -613,6 +612,38 @@ class Notex2 {
 		return this.generateCode(parent);
 	}
 	
+	bool checkBlockquote(Token token) {
+		return (token.token == 'newline') && (this.tokens[token.id + 1].token == 'less_than');
+	}
+	
+	bool checkCode(Token token) {
+		return (token.token == 'quotation') && (this.tokens[token.id + 1].token == 'quotation') && (this.tokens[token.id + 2].token == 'quotation');
+	}
+	
+	bool checkImage(Token token) {
+		return (token.token == 'exclamation_mark') && (this.tokens[token.id + 1].token == 'open_bracket');
+	}
+	
+	bool checkLink(Token token) {
+		return (token.token == 'open_square_bracket');
+	}
+	
+	bool checkList(Token token) {
+		return (token.token == 'newline') && ((this.tokens[token.id + 1].token == 'hyphen') || ((this.tokens[token.id + 1].token == 'number') && (this.tokens[token.id + 2].token == 'period')));
+	}
+	
+	bool checkSection(Token token) {
+		return (token.token == 'newline') && (this.tokens[token.id + 1].token == 'sharp');
+	}
+	
+	bool checkStrike(Token token) {
+		return (token.token == 'tilda') && (this.tokens[token.id + 1].token == 'tilda');
+	}
+	
+	bool checkStrong(Token token) {
+		return (token.token == 'asterisk');
+	}
+	
 	/**
 	 * トークンを解析し、要素を生成します。
 	 * スキャンが開始される位置は現在のトークンリーダに基づきます。
@@ -634,6 +665,7 @@ class Notex2 {
 			if (token.id == 0) {
 				switch (token.token) {
 					case 'sharp':
+						this.back();
 						Element element = analyzeSection(parent, inspecter, filter);
         					if (element != null) {
         						elements.add(element);
@@ -657,6 +689,7 @@ class Notex2 {
 				}
 			}
 			 */
+			
 			switch (token.token) {
 				case 'eof':
 					return true;
@@ -668,107 +701,43 @@ class Notex2 {
 					elements.add(text);
 					this.next();
 					break;
-				case 'asterisk': // Strong
-					Element element = analyzeStrong(parent, inspecter, filter);
-					if (element != null) {
-						elements.add(element);
-						this.next();
-					} else {
-						continue text;
-					}
-					break;
-				case 'tilde':
-					if (this.read(1).token == 'tilde') { // Strike
-						Element element = analyzeStrike(parent, inspecter, filter);
-						if (element != null) {
-        						elements.add(element);
-        						this.next();
-        					} else {
-        						continue text;
-        					}
-						break;
-					}
-					continue text;
-				case 'open_square_bracket': // Link
-					Element element = analyzeLink(parent, inspecter, filter);
-					if (element != null) {
-						elements.add(element);
-						this.next();
-					} else {
-						continue text;
-					}
-					break;
-				case 'exclamation_mark': // Image
-					if (this.read(1).token == 'open_bracket') { // Image
-						Element element = analyzeImage(parent, inspecter, filter);
-						if (element != null) {
-        						elements.add(element);
-        						this.next();
-        					} else {
-        						continue text;
-        					}
-						break;
-					}
-					continue text;
-				case 'newline':
-					if (this.read(1).token == 'sharp') { // Section
-						Element element = analyzeSection(parent, inspecter, filter);
-        					if (element != null) {
-        						elements.add(element);
-        						this.next();
-        					} else {
-        						continue text;
-        					}
-					}
-					if ((this.read(1).token == 'hyphen') ||
-						(this.read(1).token == 'number' && this.read(2).token == 'period')) { // List
-						Element element = analyzeList(parent, inspecter, filter);
-						if (element != null) {
-        						elements.add(element);
-        						this.next();
-        					} else {
-        						continue text;
-        					}
-						break;
-					}
-					if (this.read(1).token == 'newline' && this.read(2).token == 'less_than') { // Blockquote
-						Element element = analyzeBlockquote(parent, inspecter, filter);
-						if (element != null) {
-        						elements.add(element);
-        						this.next();
-        					} else {
-        						continue text;
-        					}
-						break;
-					}
-					continue text;
-				case 'quotation':
-					if (this.read(1).token == 'quotation' &&
-						this.read(2).token == 'quotation') { // Code
-						Element element = analyzeCode(parent, inspecter, filter);
-						if (element != null) {
-        						elements.add(element);
-        						this.next();
-        					} else {
-        						continue text;
-        					}
-						break;
-					}
-					continue text;
-			text:
 				default:
-					if (!parent.findParagraph()) {
-						Element element = analyzeParagraph(parent, inspecter, filter);
-	    					if (element != null) {
-	    						elements.add(element);
-	    					} else {
-	    						elements.add(this.generateText(parent, inspecter, filter));
-	    						this.next();
-	    					}
+					Element element;
+					if (checkBlockquote(token)) {
+						element = analyzeBlockquote(parent, inspecter, filter);
+					} else if (checkCode(token)) {
+						element = analyzeCode(parent, inspecter, filter);
+					} else if (checkImage(token)) {
+						element = analyzeImage(parent, inspecter, filter);
+					} else if (checkLink(token)) {
+						element = analyzeLink(parent, inspecter, filter);
+					} else if (checkList(token)) {
+						element = analyzeList(parent, inspecter, filter);
+					} else if (checkSection(token)) {
+						element = analyzeSection(parent, inspecter, filter);
+					} else if (checkStrike(token)) {
+						element = analyzeStrike(parent, inspecter, filter);
+					} else if (checkStrong(token)) {
+						element = analyzeStrong(parent, inspecter, filter);
+					} else {
+						if (!parent.findParagraph()) {
+							Element element = analyzeParagraph(parent, inspecter, filter);
+        	    					if (element != null) {
+        	    						elements.add(element);
+        	    					} else {
+        	    						elements.add(this.generateText(parent, inspecter, filter));
+        	    						this.next();
+        	    					}
+        	    					break;
+        					}
+					}
+					
+					if (element != null) {
+						elements.add(element);
 					} else {
 						elements.add(this.generateText(parent, inspecter, filter));
-						this.next();
 					}
+					this.next();
 					break;
 			}
 		});
@@ -787,40 +756,25 @@ class Notex2 {
 					return true;
 				}
 			}
-			switch (token.token) {
-				case 'asterisk':
-					if (filter != null) {
-		            			if (filter.indexOf('strong') > -1) {
-		            				continue text;
-		            			}
-		            		}
-					return true;
-				case 'open_square_bracket':
-					return true;
-				case 'exclamation_mark':
-					if (this.read(1).token == 'open_square_bracket') {
-						return true;
-					}
-					continue text;
-				case 'newline':
-					if (this.read(1).token == 'sharp') {
-						return true;
-					}
-					if (this.read(1).token == 'hyphen' ||
-						this.read(1).token == 'number') { // List
-						return true;
-					}
-					continue text;
-				case 'quotation':
-					if (this.read(1).token == 'quotation' &&
-						this.read(2).token == 'quotation') { // Code
-    					return true;
-					}
-					continue text;
-			text:
-				default:
-					text.text = token.lexeme;
-					return true;
+			if (checkBlockquote(token)) {
+				return true;
+			} else if (checkCode(token)) {
+				return true;
+			} else if (checkImage(token)) {
+				return true;
+			} else if (checkLink(token)) {
+				return true;
+			} else if (checkList(token)) {
+				return true;
+			} else if (checkSection(token)) {
+				return true;
+			} else if (checkStrike(token)) {
+				return true;
+			} else if (checkStrong(token)) {
+				return true;
+			} else {
+				text.text = token.lexeme;
+				 return true;
 			}
 			this.next();
 		});
@@ -834,32 +788,21 @@ class Notex2 {
 		Paragraph p = new Paragraph();
 		p.parent = parent;
 		p.children = this.analyze(p, (token) {
-			switch (token.token) {
-				case 'newline':
-					if (this.read(1).token == 'sharp') {
-						return true;
-					}
-					if (this.read(1).token == 'hyphen' ||
-						(this.read(1).token == 'number' && this.read(2).token == 'period')) { // List
-						return true;
-					}
-					if (this.read(1).token == 'newline' && this.read(2).token == 'less_than') {
-						return true;
-					}
-					break;
-				case 'quotation':
-					if (this.read(1).token == 'quotation' &&
-						this.read(2).token == 'quotation') { // Code
-						return true;
-					}
-					break;
-				default:
-					if (inspecter != null) {
-                				if (inspecter(token)) {
-                					return true;
-                				}
-                			}
-					return false;
+			if (checkSection(token)) {
+				return true;
+			} else if (checkList(token)) {
+				return true;
+			} else if (checkBlockquote(token)) {
+				return true;
+			} else if (checkCode(token)) {
+				return true;
+			} else {
+				if (inspecter != null) {
+        				if (inspecter(token)) {
+        					return true;
+        				}
+        			}
+				return false;
 			}
 			return false;
 		});
@@ -873,6 +816,7 @@ class Notex2 {
 		Section section = new Section();
 		section.parent = parent;
 		section.hierarchy = 0;
+		section.title = "";
 		bool secEnd = false;
 		
 		this.next();
@@ -896,11 +840,11 @@ class Notex2 {
 				}
 			} else {
 				section.children = this.analyze(section, (token) {
-					if (token.token == 'sharp') {
+					if (checkSection(token)) {
 						// 次に始まるセクションの階層を調べる
 						// もし自分より上か同階層なら自分のセクションは終了
 						
-						int nextSectionHierarchy = 1;
+						int nextSectionHierarchy = 0;
 						int step = 0;
 						this.next();
 						this.scan((Token secToken) {
@@ -1147,7 +1091,7 @@ class Notex2 {
 	void scan(bool scanner(Token token)) {
 		while ((this.pos) < this.tokens.length) {
 			Token token = this.read();
-			////print(token);
+			//print(token);
 			if (scanner(token) == true) {
 				break;
 			}	

@@ -709,7 +709,11 @@ class Notex2 {
 			
 			if (!parent.parentSearch('paragraph')) {
 				Element element;
-				if (checkKeyword(token) || checkStrong(token)) {
+				if (checkKeyword(token) ||
+					checkStrong(token) ||
+					checkStrike(token) ||
+					checkLink(token)
+				) {
 					this.back();
 					element = analyzeParagraph(parent, inspecter, filter);
 					
@@ -726,12 +730,9 @@ class Notex2 {
 				case 'eof':
 					return true;
 				case 'escape':
+					// 必殺技レキシカルトークンリライト (時空書き換え(危険))
 					this.next();
-					Text text = new Text();
-                        		text.parent = parent;
-                        		text.text = this.read().lexeme;
-					elements.add(text);
-					this.next();
+					this.tokens[token.id + 1].token = 'text';
 					break;
 				default:
 					Element element;

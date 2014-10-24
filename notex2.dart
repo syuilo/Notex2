@@ -7,7 +7,7 @@
 library Notex2;
 
 void scream() {
-	//print("うー！にゃー！" * 4);
+	print("うー！にゃー！" * 4);
 }
 
 String indent(int hierarchy) {
@@ -46,10 +46,6 @@ class Text extends Element {
 	
 	String toHtml([int hierarchy = 0]) {
 		String html = this.text;
-		//html = html.replaceAll(new RegExp(r'\n\n'), '\n');
-		//html = html.replaceAll(new RegExp(r'^\n'), '');
-		//html = html.replaceAll(new RegExp(r'\n$'), '');
-		//html = html.replaceAll('\n', '</br>');
 		return html;
 	}
 }
@@ -105,6 +101,9 @@ class Section extends Element {
 	}
 }
 
+/**
+ * Paragraph
+ */
 class Paragraph extends Element {
 	Element parent;
 	List<Element> children;
@@ -123,8 +122,13 @@ class Paragraph extends Element {
 			html += element.toHtml();
 		}
 		html = html.trim();
+		//html = html.replaceAll(new RegExp(r'\n{2, 0}'), '\n');
 		html = html.replaceAll('\n', '</br>');
-		return indent(hierarchy) + "<p>$html</p>\n";
+		if (html != '') {
+			return indent(hierarchy) + "<p>$html</p>\n";
+		} else {
+			return '';
+		}
 	}
 }
 
@@ -304,7 +308,7 @@ class Notex2 {
 	int sectionCount = 0;
 	
 	Notex2(String source) {
-		this.source = source + "\nEOF";
+		this.source = source; // + "\nEOF";
 		this.tokens = new List();
 	}
 	
@@ -325,7 +329,10 @@ class Notex2 {
 		Token tokeniza() {
 			Token token = new Token();
 			bool text = false;
-			while ((pos + 1) != this.source.length) {
+			if (this.source.length == 0) {
+				return null;
+			}
+			while (pos < this.source.length) {
 				String char = this.source[pos];
 				pos++;
 				switch (char) {
@@ -502,13 +509,19 @@ class Notex2 {
 			return token;
 		}
 		
-		while ((pos + 1) != this.source.length) {
+		while (pos < this.source.length) {
 			var token = tokeniza();
 			token.id = id;
 			id++;
 			//print("${token.id}\t${token.token}\t: ${token.lexeme}");
 			tokens.add(token);
 		}
+		
+		Token token = new Token();
+		token.id = id;
+		token.token = 'eof';
+		token.lexeme = '';
+		tokens.add(token);
 		
 		return tokens;
 	}
@@ -612,7 +625,20 @@ class Notex2 {
 					return true;
 				}
 			}
+			if (token.id == 0) {
+				switch (token.token) {
+					case 'sharp':
+						Element element = analyzeSection(parent, inspecter, filter);
+        					if (element != null) {
+        						elements.add(element);
+        						this.next();
+        					}
+        					break;
+				}
+			}
 			switch (token.token) {
+				case 'eof':
+					return true;
 				case 'escape':
 					this.next();
 					Text text = new Text();
@@ -620,15 +646,6 @@ class Notex2 {
                         		text.text = this.read().lexeme;
 					elements.add(text);
 					this.next();
-					break;
-				case 'sharp': // Section
-					Element element = analyzeSection(parent, inspecter, filter);
-					if (element != null) {
-						elements.add(element);
-						this.next();
-					} else {
-						continue text;
-					}
 					break;
 				case 'asterisk': // Strong
 					Element element = analyzeStrong(parent, inspecter, filter);
@@ -673,6 +690,15 @@ class Notex2 {
 					}
 					continue text;
 				case 'newline':
+					if (this.read(1).token == 'sharp') { // Section
+						Element element = analyzeSection(parent, inspecter, filter);
+        					if (element != null) {
+        						elements.add(element);
+        						this.next();
+        					} else {
+        						continue text;
+        					}
+					}
 					if ((this.read(1).token == 'hyphen') ||
 						(this.read(1).token == 'number' && this.read(2).token == 'period')) { // List
 						Element element = analyzeList(parent, inspecter, filter);
@@ -755,9 +781,10 @@ class Notex2 {
 						return true;
 					}
 					continue text;
-				case 'sharp':
-					return true;
 				case 'newline':
+					if (this.read(1).token == 'sharp') {
+						return true;
+					}
 					if (this.read(1).token == 'hyphen' ||
 						this.read(1).token == 'number') { // List
 						return true;
@@ -787,9 +814,10 @@ class Notex2 {
 		p.parent = parent;
 		p.children = this.analyze(p, (token) {
 			switch (token.token) {
-				case 'sharp':
-					return true;
 				case 'newline':
+					if (this.read(1).token == 'sharp') {
+						return true;
+					}
 					if (this.read(1).token == 'hyphen' ||
 						(this.read(1).token == 'number' && this.read(2).token == 'period')) { // List
 						return true;
@@ -826,6 +854,7 @@ class Notex2 {
 		section.hierarchy = 0;
 		bool secEnd = false;
 		
+		this.next();
 		this.scan((Token token) {
 			if (!secEnd) {
 				switch (token.token) {
@@ -1060,12 +1089,7 @@ class Notex2 {
 	 * トークンリーダを指定した分だけ進めます。
 	 */
 	void next([int step = 1]) {
-		if ((this.pos + step) < this.tokens.length) {
-			this.pos += step;
-		} else {
-			//throw new Exception("Reader over");
-			this.pos = this.tokens.length - 1;
-		}
+		this.pos += step;
 	}
 	
 	/**
@@ -1079,7 +1103,16 @@ class Notex2 {
 	 * 現在のトークンリーダの位置にあるトークンを読み出します。
 	 */
 	Token read([int relative_pos = 0]) {
-		return this.tokens[this.pos + relative_pos];
+		int pos = this.pos + relative_pos;
+		if (pos >= this.tokens.length) {
+			Token token = new Token();
+			token.token = 'eof';
+			token.lexeme = '';
+			return token;
+			//throw new Exception("Reader over");
+		} else {
+			return this.tokens[pos];
+		}
 	}
 	
 	/**
@@ -1087,7 +1120,7 @@ class Notex2 {
 	 * スキャナが [true] を返した場合、そこで直ちに走査は終了し、関数が終了します。
 	 */
 	void scan(bool scanner(Token token)) {
-		while ((this.pos + 1) < this.tokens.length) {
+		while ((this.pos) < this.tokens.length) {
 			Token token = this.read();
 			////print(token);
 			if (scanner(token) == true) {

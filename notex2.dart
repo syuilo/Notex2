@@ -706,22 +706,22 @@ class Notex2 {
         					break;
 				}
 			}
-			/*
-			if (!parent.findParagraph()) {
-				switch (token.token) {
-					case 'asterisk':
-						Element element = analyzeParagraph(parent, inspecter, filter);
-	    					if (element != null) {
-	    						elements.add(element);
-	    					} else {
-	    						elements.add(this.generateText(parent, inspecter, filter));
-	    						this.next();
-	    					}
-        					break;
+			
+			if (!parent.parentSearch('paragraph')) {
+				Element element;
+				if (checkKeyword(token) || checkStrong(token)) {
+					this.back();
+					element = analyzeParagraph(parent, inspecter, filter);
+					
+					if (element != null) {
+        					elements.add(element);
+        					token = this.tokens[token.id + 1];
+        				} else {
+        					this.next();
+        				}
 				}
 			}
-			 */
-			
+
 			switch (token.token) {
 				case 'eof':
 					return true;
@@ -1079,7 +1079,7 @@ class Notex2 {
 			}
 			this.next();
 		});
-		code.code = code.code.trim();
+		code.code = htmlEscape(code.code.trim());
 		code.lang = htmlEscape(code.lang);
 		return code;
 	}
@@ -1137,6 +1137,11 @@ class Notex2 {
 			token.lexeme = '';
 			return token;
 			//throw new Exception("Reader over");
+		} else if (pos < 0) {
+			Token token = new Token();
+			token.token = 'sof';
+			token.lexeme = '';
+			return token;
 		} else {
 			return this.tokens[pos];
 		}

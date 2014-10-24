@@ -159,6 +159,27 @@ class Strong extends Element {
 	}
 }
 
+class Keyword extends Element {
+	Element parent;
+	List<Element> children;
+	
+	Keyword() {
+		this.children = new List();
+	}
+	
+	bool findParagraph() {
+		return this.parent.findParagraph();
+	}
+	
+	String toHtml([int hierarchy = 0]) {
+		String html = "";
+		for (Element element in this.children) {
+			html += element.toHtml();
+		}
+		return "<b>$html</b>";
+	}
+}
+
 class Strike extends Element {
 	Element parent;
 	List<Element> children;
@@ -549,6 +570,15 @@ class Notex2 {
 		return this.generateParagraph(parent);
 	}
 	
+	Element analyzeKeyword(Element parent, [inspecter(Token token), List<String> filter]) {
+		if (filter != null) {
+			if (filter.indexOf('keyword') > -1) {
+				return null;
+			}
+		}
+		return this.generateKeyword(parent, inspecter, filter);
+	}
+	
 	Element analyzeStrong(Element parent, [inspecter(Token token), List<String> filter]) {
 		if (filter != null) {
 			if (filter.indexOf('strong') > -1) {
@@ -624,6 +654,10 @@ class Notex2 {
 		return (token.token == 'exclamation_mark') && (this.tokens[token.id + 1].token == 'open_bracket');
 	}
 	
+	bool checkKeyword(Token token) {
+		return (token.token == 'asterisk') && (this.tokens[token.id + 1].token != 'asterisk');
+	}
+	
 	bool checkLink(Token token) {
 		return (token.token == 'open_square_bracket');
 	}
@@ -641,7 +675,7 @@ class Notex2 {
 	}
 	
 	bool checkStrong(Token token) {
-		return (token.token == 'asterisk');
+		return (token.token == 'asterisk') && (this.tokens[token.id + 1].token == 'asterisk');
 	}
 	
 	/**
@@ -709,6 +743,8 @@ class Notex2 {
 						element = analyzeCode(parent, inspecter, filter);
 					} else if (checkImage(token)) {
 						element = analyzeImage(parent, inspecter, filter);
+					} else if (checkKeyword(token)) {
+                                        	element = analyzeKeyword(parent, inspecter, filter);
 					} else if (checkLink(token)) {
 						element = analyzeLink(parent, inspecter, filter);
 					} else if (checkList(token)) {
@@ -881,20 +917,39 @@ class Notex2 {
 	}
 	
 	/**
-	 * Strongを解析します。
+	 * Keywordを解析します。
 	 */
-	Strong generateStrong(Element parent, [inspecter(token), List<String> filter]) {
-		Strong strong = new Strong();
-		strong.parent = parent;
+	Keyword generateKeyword(Element parent, [inspecter(token), List<String> filter]) {
+		Keyword keyword = new Keyword();
+		keyword.parent = parent;
 		this.next();
 		if (filter == null) {
 			filter = ['paragraph'];
 		} else {
 			filter.add('paragraph');
 		}
-		strong.children = this.analyze(strong, (token) {
-			return token.token == 'asterisk';
+		keyword.children = this.analyze(keyword, (token) {
+			return (token.token == 'asterisk') && (this.tokens[token.id + 1].token != 'asterisk');
 		}, filter);
+		return keyword;
+	}
+	
+	/**
+	 * Strongを解析します。
+	 */
+	Strong generateStrong(Element parent, [inspecter(token), List<String> filter]) {
+		Strong strong = new Strong();
+		strong.parent = parent;
+		this.next(2);
+		if (filter == null) {
+			filter = ['paragraph'];
+		} else {
+			filter.add('paragraph');
+		}
+		strong.children = this.analyze(strong, (token) {
+			return (token.token == 'asterisk') && (this.tokens[token.id + 1].token == 'asterisk');
+		}, filter);
+		this.next();
 		return strong;
 	}
 	

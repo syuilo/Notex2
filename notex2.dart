@@ -53,7 +53,7 @@ abstract class Element {
 				for (Element element in this.children) {
 	        			html += element.genelateTableOfContentsHtml(id);
 	        		}
-	        		return '<li><a href="#${id}-${this.number}">${this.title}</a><ol>$html</ol></li>';
+	        		return '<li class="section"><a href="#${id}-${this.number}">${this.title}</a><ol>$html</ol></li>';
 			} else {
 				return '<li><a href="#${id}-${this.number}">${this.title}</a></li>';
 			}
@@ -1061,6 +1061,10 @@ class Notex2 {
 		}
 		this.scan((Token token) {
 			switch (token.token) {
+				case 'escape':
+					this.next();
+                        		code.code += this.read().lexeme;
+					break;
 				case 'quotation':
 					if (this.read(1).token == 'quotation' &&
 						this.read(2).token == 'quotation') {
@@ -1075,6 +1079,7 @@ class Notex2 {
 			}
 			this.next();
 		});
+		code.code = code.code.trim();
 		code.lang = htmlEscape(code.lang);
 		return code;
 	}

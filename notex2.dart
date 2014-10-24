@@ -637,7 +637,7 @@ class Notex2 {
 	}
 	
 	bool checkStrike(Token token) {
-		return (token.token == 'tilda') && (this.tokens[token.id + 1].token == 'tilda');
+		return (token.token == 'tilde') && (this.tokens[token.id + 1].token == 'tilde');
 	}
 	
 	bool checkStrong(Token token) {

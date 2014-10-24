@@ -15,6 +15,13 @@ String indent(int hierarchy) {
 	return ("    " * hierarchy);
 }
 
+String htmlEscape(String source) {
+	String html = source;
+	html = html.replaceAll('<', '&lt;');
+	html = html.replaceAll('>', '&gt;');
+	return html;
+}
+
 /**
  * Token
  */
@@ -45,8 +52,7 @@ class Text extends Element {
 	}
 	
 	String toHtml([int hierarchy = 0]) {
-		String html = this.text;
-		return html;
+		return htmlEscape(this.text);
 	}
 }
 
@@ -636,6 +642,21 @@ class Notex2 {
         					break;
 				}
 			}
+			/*
+			if (!parent.findParagraph()) {
+				switch (token.token) {
+					case 'asterisk':
+						Element element = analyzeParagraph(parent, inspecter, filter);
+	    					if (element != null) {
+	    						elements.add(element);
+	    					} else {
+	    						elements.add(this.generateText(parent, inspecter, filter));
+	    						this.next();
+	    					}
+        					break;
+				}
+			}
+			 */
 			switch (token.token) {
 				case 'eof':
 					return true;
@@ -911,6 +932,7 @@ class Notex2 {
 			this.next();
 		});
 		//print("["+("-"*(section.hierarchy-1))+"< セクションの終了 h:${section.hierarchy} title:${section.title}]");
+		section.title = htmlEscape(section.title);
 		return section;	
 	}
 	
@@ -975,6 +997,7 @@ class Notex2 {
 			}
 			this.next();
 		});
+		link.url = htmlEscape(link.url);
 		return link;
 	}
 	
@@ -995,6 +1018,7 @@ class Notex2 {
 			}
 			this.next();
 		});
+		img.url = htmlEscape(img.url);
 		return img;
 	}
 	
@@ -1054,6 +1078,7 @@ class Notex2 {
 			}
 			this.next();
 		});
+		code.lang = htmlEscape(code.lang);
 		return code;
 	}
 	

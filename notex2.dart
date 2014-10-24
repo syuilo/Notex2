@@ -715,7 +715,7 @@ class Notex2 {
 					
 					if (element != null) {
         					elements.add(element);
-        					token = this.tokens[token.id + 1];
+						token = this.read();
         				} else {
         					this.next();
         				}

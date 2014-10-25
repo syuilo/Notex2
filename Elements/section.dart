@@ -62,6 +62,7 @@ class Section extends Element {
         					break;
         				case "newline":
         					//print("["+("-"*(section.hierarchy-1))+"> セクションの開始 h:${section.hierarchy} title:${section.title}]");
+        					parser.scanner.back();
         					secEnd = true;
         					break;
         				default:
@@ -105,6 +106,7 @@ class Section extends Element {
         		}
         		parser.scanner.next();
         	});
+        	
         	//print("["+("-"*(section.hierarchy-1))+"< セクションの終了 h:${section.hierarchy} title:${section.title}]");
         	section.title = htmlEscape(section.title);
         	return section;	

@@ -108,7 +108,7 @@ class Section extends Element {
         	});
         	
         	//print("["+("-"*(section.hierarchy-1))+"< セクションの終了 h:${section.hierarchy} title:${section.title}]");
-        	section.title = htmlEscape(section.title);
+        	section.title = htmlEscape(section.title.trim());
         	return section;	
         }
 }

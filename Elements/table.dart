@@ -44,6 +44,38 @@ class Table extends Element {
 				if (parser.scanner.read().token == 'vertical_bar') {
 					parser.scanner.next();
 					TableHeader th = new TableHeader();
+					
+					// get colspan and rowspan parameter
+					if (parser.scanner.read().token == 'open_curly_bracket') {
+						parser.scanner.next();
+						String colspan = '';
+						parser.scanner.scan((Token token) {
+                                			switch (token.token) {
+                                				case 'number':
+                                					colspan += token.lexeme;
+                                					break;
+                                				default:
+                                					return true;
+                                			}
+                                			parser.scanner.next();
+                                		});
+						if (colspan != '') th.colspan = int.parse(colspan);
+						parser.scanner.next();
+						
+						String rowspan = '';
+						parser.scanner.scan((Token token) {
+                                			switch (token.token) {
+                                				case 'number':
+                                					rowspan += token.lexeme;
+                                					break;
+                                				default:
+                                					return true;
+                                			}
+                                			parser.scanner.next();
+                                		});
+						if (rowspan != '') th.rowspan = int.parse(rowspan);
+						parser.scanner.next();
+					}
 					th.parent = tr;
 					th.children = parser.analyze(th, (token) {
 						return token.token == 'vertical_bar' || token.token == 'newline';
@@ -59,6 +91,38 @@ class Table extends Element {
         				}
 				} else {
 					TableData td = new TableData();
+					
+					// get colspan and rowspan parameter
+					if (parser.scanner.read().token == 'open_curly_bracket') {
+						parser.scanner.next();
+						String colspan = '';
+						parser.scanner.scan((Token token) {
+                                			switch (token.token) {
+                                				case 'number':
+                                					colspan += token.lexeme;
+                                					break;
+                                				default:
+                                					return true;
+                                			}
+                                			parser.scanner.next();
+                                		});
+						if (colspan != '') td.colspan = int.parse(colspan);
+						parser.scanner.next();
+						
+						String rowspan = '';
+						parser.scanner.scan((Token token) {
+                                			switch (token.token) {
+                                				case 'number':
+                                					rowspan += token.lexeme;
+                                					break;
+                                				default:
+                                					return true;
+                                			}
+                                			parser.scanner.next();
+                                		});
+						if (rowspan != '') td.rowspan = int.parse(rowspan);
+						parser.scanner.next();
+					}
 					td.parent = tr;
 					td.children = parser.analyze(td, (token) {
 						return token.token == 'vertical_bar' || token.token == 'newline';

@@ -91,6 +91,14 @@ class Lexer {
                 					pos--;
                 				}
                 				return token;
+                			case ',':
+                				if (!text) {
+                					token.token = 'comma';
+                					token.lexeme = char;
+                				} else {
+                					pos--;
+                				}
+                				return token;
                 			case '@':
                 				if (!text) {
                 					token.token = 'at_mark';
@@ -166,6 +174,22 @@ class Lexer {
                 			case ']':
                 				if (!text) {
                 					token.token = 'close_square_bracket';
+                					token.lexeme = char;
+                				} else {
+                					pos--;
+                				}
+                				return token;
+                			case '{':
+                				if (!text) {
+                					token.token = 'open_curly_bracket';
+                					token.lexeme = char;
+                				} else {
+                					pos--;
+                				}
+                				return token;
+                			case '}':
+                				if (!text) {
+                					token.token = 'close_curly_bracket';
                 					token.lexeme = char;
                 				} else {
                 					pos--;

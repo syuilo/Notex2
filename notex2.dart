@@ -38,6 +38,10 @@ part "Elements/paragraph.dart";
 part "Elements/section.dart";
 part "Elements/strike.dart";
 part "Elements/strong.dart";
+part "Elements/table.dart";
+part "Elements/table_data.dart";
+part "Elements/table_header.dart";
+part "Elements/table_row.dart";
 part "Elements/text.dart";
 
 

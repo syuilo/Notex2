@@ -42,6 +42,8 @@ class Paragraph extends Element {
 				return true;
 			} else if (MultiLineCode.check(parser.scanner, token)) {
 				return true;
+			} else if (Table.check(parser.scanner, token)) {
+				return true;
 			} else {
 				// ?
 				if (inspecter != null) {

@@ -80,6 +80,8 @@ class Parser {
 						element = Strike.analyze(this, parent, inspecter, filter);
 					} else if (Strong.check(this.scanner, token)) {
 						element = Strong.analyze(this, parent, inspecter, filter);
+					} else if (Table.check(this.scanner, token)) {
+						element = Table.analyze(this, parent, inspecter, filter);
 					} else {
 						if (!parent.parentSearch('paragraph')) {
 							Element element = Paragraph.analyze(this, parent, inspecter, filter);

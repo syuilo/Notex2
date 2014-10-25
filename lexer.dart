@@ -131,6 +131,14 @@ class Lexer {
                 					pos--;
                 				}
                 				return token;
+                			case '|':
+                				if (!text) {
+                					token.token = 'vertical_bar';
+                					token.lexeme = char;
+                				} else {
+                					pos--;
+                				}
+                				return token;
                 			case '(':
                 				if (!text) {
                 					token.token = 'open_bracket';

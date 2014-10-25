@@ -11,8 +11,10 @@ class Strike extends Element {
 		return "<del>$html</del>";
 	}
 	
-	static bool check(List<Token> tokens, Token token) {
-        	return (token.token == 'tilde') && (tokens[token.id + 1].token == 'tilde');
+	static bool check(Scanner scanner, Token token) {
+        	return
+        		(token.token == 'tilde') &&
+        		(scanner.pick(token.id + 1).token == 'tilde');
         }
 
 	static Element analyze(Parser parser, Element parent, [inspecter(Token token), List<String> filter]) {

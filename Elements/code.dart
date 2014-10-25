@@ -9,8 +9,11 @@ class Code extends Element {
 		return "<code data-lang=\"$lang\">$code</code>";
 	}
 	
-	static bool check(List<Token> tokens, Token token) {
-        	return (token.token == 'quotation') && (tokens[token.id + 1].token == 'quotation') && (tokens[token.id + 2].token != 'quotation');
+	static bool check(Scanner scanner, Token token) {
+        	return
+        		(token.token == 'quotation') &&
+        		(scanner.pick(token.id + 1).token == 'quotation') &&
+        		(scanner.pick(token.id + 2).token != 'quotation');
         }
 
 	static  Element analyze(Parser parser, Element parent, [inspecter(Token token), List<String> filter]) {

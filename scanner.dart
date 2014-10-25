@@ -5,10 +5,37 @@ part of Notex2;
  */
 class Scanner {
 	List<Token> tokens;
-	int pos = 0;
+	int pos = -1;
 	
 	Scanner(List<Token> tokens) {
 		this.tokens = tokens;
+	}
+	
+	/**
+	 * 指定された位置にあるトークンを読み出します。
+	 */
+	Token pick(int pos) {
+		if (pos >= this.tokens.length) {
+			Token token = new Token();
+			token.token = 'null';
+			token.lexeme = '';
+			return token;
+			//throw new Exception("Reader over");
+		} else if (pos == -1) {
+			Token token = new Token();
+			token.id = -1;
+			token.token = 'newline';
+			token.lexeme = '\n';
+			return token;
+		} else if (pos < 0) {
+			Token token = new Token();
+			token.token = 'null';
+			token.lexeme = '';
+			return token;
+			//throw new Exception("Reader over");
+		} else {
+			return this.tokens[pos];
+		}
 	}
 	
 	/**
@@ -30,21 +57,7 @@ class Scanner {
 	 */
 	Token read([int relative_pos = 0]) {
 		int pos = this.pos + relative_pos;
-		if (pos >= this.tokens.length) {
-			Token token = new Token();
-			token.token = 'eof';
-			token.lexeme = '';
-			return token;
-			//throw new Exception("Reader over");
-		} else if (pos < 0) {
-			Token token = new Token();
-			token.token = 'sof';
-			token.lexeme = '';
-			return token;
-			//throw new Exception("Reader over");
-		} else {
-			return this.tokens[pos];
-		}
+		return this.pick(pos);
 	}
 	
 	/**

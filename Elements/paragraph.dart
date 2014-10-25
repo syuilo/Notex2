@@ -34,13 +34,13 @@ class Paragraph extends Element {
 		Paragraph p = new Paragraph();
 		p.parent = parent;
 		p.children = parser.analyze(p, (token) {
-			if (Section.check(parser.scanner.tokens, token)) {
+			if (Section.check(parser.scanner, token)) {
 				return true;
-			} else if (EList.check(parser.scanner.tokens, token)) {
+			} else if (EList.check(parser.scanner, token)) {
 				return true;
-			} else if (Blockquote.check(parser.scanner.tokens, token)) {
+			} else if (Blockquote.check(parser.scanner, token)) {
 				return true;
-			} else if (MultiLineCode.check(parser.scanner.tokens, token)) {
+			} else if (MultiLineCode.check(parser.scanner, token)) {
 				return true;
 			} else {
 				// ?

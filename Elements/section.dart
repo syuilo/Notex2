@@ -27,8 +27,10 @@ class Section extends Element {
 				+ indent(hierarchy) + "</section>\n";
 	}
 	
-	static bool check(List<Token> tokens, Token token) {
-		return (token.token == 'newline') && (tokens[token.id + 1].token == 'sharp');
+	static bool check(Scanner scanner, Token token) {
+		return
+			(token.token == 'newline') &&
+			(scanner.pick(token.id + 1).token == 'sharp');
 	}
 	
 	static Element analyze(Parser parser, Element parent, [inspecter(Token token), List<String> filter]) {
@@ -71,7 +73,7 @@ class Section extends Element {
         			}
         		} else {
         			section.children = parser.analyze(section, (token) {
-        				if (check(parser.scanner.tokens, token)) {
+        				if (check(parser.scanner, token)) {
         					// 次に始まるセクションの階層を調べる
         					// もし自分より上か同階層なら自分のセクションは終了
         					

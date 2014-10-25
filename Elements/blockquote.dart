@@ -11,8 +11,11 @@ class Blockquote extends Element {
 		return indent(hierarchy) + "<blockquote>\n$html" + indent(hierarchy) + "</blockquote>\n";
 	}
 	
-	static bool check(List<Token> tokens, Token token) {
-        	return (token.token == 'newline') && (tokens[token.id + 1].token == 'newline') && (tokens[token.id + 2].token == 'less_than');
+	static bool check(Scanner scanner, Token token) {
+        	return
+        		(token.token == 'newline') &&
+        		(scanner.pick(token.id + 1).token == 'newline') &&
+        		(scanner.pick(token.id + 2).token == 'less_than');
         }
 
        static Element analyze(Parser parser, Element parent, [inspecter(Token token), List<String> filter]) {

@@ -9,8 +9,12 @@ class MultiLineCode extends Element {
 		return indent(hierarchy) + "<pre><code data-lang=\"$lang\">$code</code></pre>\n";
 	}
 	
-	static bool check(List<Token> tokens, Token token) {
-        	return (token.token == 'newline') && (tokens[token.id + 1].token == 'quotation') && (tokens[token.id + 2].token == 'quotation') && (tokens[token.id + 3].token == 'quotation');
+	static bool check(Scanner scanner, Token token) {
+        	return
+        		(token.token == 'newline') &&
+        		(scanner.pick(token.id + 1).token == 'quotation') &&
+        		(scanner.pick(token.id + 2).token == 'quotation') &&
+        		(scanner.pick(token.id + 3).token == 'quotation');
         }
 
 	static  Element analyze(Parser parser, Element parent, [inspecter(Token token), List<String> filter]) {

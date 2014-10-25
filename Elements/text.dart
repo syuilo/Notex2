@@ -32,21 +32,21 @@ class Text extends Element {
 					return true;
 				}
 			}
-			if (Blockquote.check(parser.scanner.tokens, token)) {
+			if (Blockquote.check(parser.scanner, token)) {
 				return true;
-			} else if (MultiLineCode.check(parser.scanner.tokens, token)) {
+			} else if (MultiLineCode.check(parser.scanner, token)) {
 				return true;
-			} else if (Image.check(parser.scanner.tokens, token)) {
+			} else if (Image.check(parser.scanner, token)) {
 				return true;
-			} else if (Link.check(parser.scanner.tokens, token)) {
+			} else if (Link.check(parser.scanner, token)) {
 				return true;
-			} else if (EList.check(parser.scanner.tokens, token)) {
+			} else if (EList.check(parser.scanner, token)) {
 				return true;
-			} else if (Section.check(parser.scanner.tokens, token)) {
+			} else if (Section.check(parser.scanner, token)) {
 				return true;
-			} else if (Strike.check(parser.scanner.tokens, token)) {
+			} else if (Strike.check(parser.scanner, token)) {
 				return true;
-			} else if (Strong.check(parser.scanner.tokens, token)) {
+			} else if (Strong.check(parser.scanner, token)) {
 				return true;
 			} else {
 				text.text = token.lexeme;

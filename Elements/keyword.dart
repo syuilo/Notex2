@@ -11,8 +11,10 @@ class Keyword extends Element {
 		return "<b>$html</b>";
 	}
 	
-	static bool check(List<Token> tokens, Token token) {
-        	return (token.token == 'asterisk') && (tokens[token.id + 1].token != 'asterisk');
+	static bool check(Scanner scanner, Token token) {
+        	return
+        		(token.token == 'asterisk') &&
+        		(scanner.pick(token.id + 1).token != 'asterisk');
         }
 
 	static Element analyze(Parser parser, Element parent, [inspecter(Token token), List<String> filter]) {

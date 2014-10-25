@@ -12,7 +12,7 @@ class Link extends Element {
 		return "<a href=\"$url\" target=\"_blank\">$html</a>";
 	}
 	
-	static bool check(List<Token> tokens, Token token) {
+	static bool check(Scanner scanner, Token token) {
         	return (token.token == 'open_square_bracket');
         }
 

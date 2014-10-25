@@ -16,8 +16,14 @@ class EList extends Element {
 		}
 	}
 	
-	static bool check(List<Token> tokens, Token token) {
-        	return (token.token == 'newline') && ((tokens[token.id + 1].token == 'hyphen') || ((tokens[token.id + 1].token == 'number') && (tokens[token.id + 2].token == 'period')));
+	static bool check(Scanner scanner, Token token) {
+        	return
+        		token.token == 'newline' && (
+        			scanner.pick(token.id + 1).token == 'hyphen' || (
+        				scanner.pick(token.id + 1).token == 'number' &&
+        				scanner.pick(token.id + 2).token == 'period'
+        			)
+        		);
         }
 
         static Element analyze(Parser parser, Element parent, [inspecter(Token token), List<String> filter]) {

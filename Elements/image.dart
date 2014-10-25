@@ -8,8 +8,10 @@ class Image extends Element {
 		return "<img src=\"$url\" alt=\"image\"/>";
 	}
 	
-	static bool check(List<Token> tokens, Token token) {
-        	return (token.token == 'exclamation_mark') && (tokens[token.id + 1].token == 'open_bracket');
+	static bool check(Scanner scanner, Token token) {
+        	return
+        		(token.token == 'exclamation_mark') &&
+        		(scanner.pick(token.id + 1).token == 'open_bracket');
         }
 
 	static Element analyze(Parser parser, Element parent, [inspecter(Token token), List<String> filter]) {

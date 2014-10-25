@@ -29,26 +29,14 @@ class Parser {
 					return true;
 				}
 			}
-			if (token.id == 0) {
-				switch (token.token) {
-					case 'sharp':
-						this.scanner.back();
-						Element element = Section.analyze(this, parent, inspecter, filter);
-        					if (element != null) {
-        						elements.add(element);
-        						this.scanner.next();
-        					}
-        					break;
-				}
-			}
 			
 			if (!parent.parentSearch('paragraph')) {
 				Element element;
-				if (Keyword.check(this.scanner.tokens, token) ||
-					Strong.check(this.scanner.tokens, token) ||
-					Strike.check(this.scanner.tokens, token) ||
-					Link.check(this.scanner.tokens, token) ||
-					Code.check(this.scanner.tokens, token)
+				if (Keyword.check(this.scanner, token) ||
+					Strong.check(this.scanner, token) ||
+					Strike.check(this.scanner, token) ||
+					Link.check(this.scanner, token) ||
+					Code.check(this.scanner, token)
 				) {
 					this.scanner.back();
 					element = Paragraph.analyze(this, parent, inspecter, filter);
@@ -72,25 +60,25 @@ class Parser {
 					break;
 				default:
 					Element element;
-					if (Blockquote.check(this.scanner.tokens, token)) {
+					if (Blockquote.check(this.scanner, token)) {
 						element = Blockquote.analyze(this, parent, inspecter, filter);
-					} else if (Code.check(this.scanner.tokens, token)) {
+					} else if (Code.check(this.scanner, token)) {
 						element = Code.analyze(this, parent, inspecter, filter);
-					} else if (MultiLineCode.check(this.scanner.tokens, token)) {
+					} else if (MultiLineCode.check(this.scanner, token)) {
 						element = MultiLineCode.analyze(this, parent, inspecter, filter);
-					} else if (Image.check(this.scanner.tokens, token)) {
+					} else if (Image.check(this.scanner, token)) {
 						element = Image.analyze(this, parent, inspecter, filter);
-					} else if (Keyword.check(this.scanner.tokens, token)) {
+					} else if (Keyword.check(this.scanner, token)) {
                                         	element = Keyword.analyze(this, parent, inspecter, filter);
-					} else if (Link.check(this.scanner.tokens, token)) {
+					} else if (Link.check(this.scanner, token)) {
 						element = Link.analyze(this, parent, inspecter, filter);
-					} else if (EList.check(this.scanner.tokens, token)) {
+					} else if (EList.check(this.scanner, token)) {
 						element = EList.analyze(this, parent, inspecter, filter);
-					} else if (Section.check(this.scanner.tokens, token)) {
+					} else if (Section.check(this.scanner, token)) {
 						element = Section.analyze(this, parent, inspecter, filter);
-					} else if (Strike.check(this.scanner.tokens, token)) {
+					} else if (Strike.check(this.scanner, token)) {
 						element = Strike.analyze(this, parent, inspecter, filter);
-					} else if (Strong.check(this.scanner.tokens, token)) {
+					} else if (Strong.check(this.scanner, token)) {
 						element = Strong.analyze(this, parent, inspecter, filter);
 					} else {
 						if (!parent.parentSearch('paragraph')) {

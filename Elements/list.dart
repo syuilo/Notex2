@@ -51,6 +51,7 @@ class EList extends Element {
 			}
 			parser.scanner.next();
 		});
+		parser.scanner.back();
 		return list;
 	}
 }

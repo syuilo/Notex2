@@ -49,6 +49,11 @@ class Paragraph extends Element {
         					return true;
         				}
         			}
+				
+				if (token.token == 'newline' && parser.scanner.read(1).token == 'newline') {
+					parser.scanner.next();
+					return true;
+				}
 				return false;
 			}
 		});

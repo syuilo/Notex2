@@ -34,7 +34,7 @@ class Text extends Element {
 			}
 			if (Blockquote.check(parser.scanner.tokens, token)) {
 				return true;
-			} else if (Code.check(parser.scanner.tokens, token)) {
+			} else if (MultiLineCode.check(parser.scanner.tokens, token)) {
 				return true;
 			} else if (Image.check(parser.scanner.tokens, token)) {
 				return true;

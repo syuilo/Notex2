@@ -40,7 +40,7 @@ class Paragraph extends Element {
 				return true;
 			} else if (Blockquote.check(parser.scanner.tokens, token)) {
 				return true;
-			} else if (Code.check(parser.scanner.tokens, token)) {
+			} else if (MultiLineCode.check(parser.scanner.tokens, token)) {
 				return true;
 			} else {
 				// ?

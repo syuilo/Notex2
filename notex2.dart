@@ -33,6 +33,7 @@ part "Elements/keyword.dart";
 part "Elements/link.dart";
 part "Elements/list.dart";
 part "Elements/list_item.dart";
+part "Elements/multilinecode.dart";
 part "Elements/paragraph.dart";
 part "Elements/section.dart";
 part "Elements/strike.dart";

@@ -47,7 +47,8 @@ class Parser {
 				if (Keyword.check(this.scanner.tokens, token) ||
 					Strong.check(this.scanner.tokens, token) ||
 					Strike.check(this.scanner.tokens, token) ||
-					Link.check(this.scanner.tokens, token)
+					Link.check(this.scanner.tokens, token) ||
+					Code.check(this.scanner.tokens, token)
 				) {
 					this.scanner.back();
 					element = Paragraph.analyze(this, parent, inspecter, filter);
@@ -75,6 +76,8 @@ class Parser {
 						element = Blockquote.analyze(this, parent, inspecter, filter);
 					} else if (Code.check(this.scanner.tokens, token)) {
 						element = Code.analyze(this, parent, inspecter, filter);
+					} else if (MultiLineCode.check(this.scanner.tokens, token)) {
+						element = MultiLineCode.analyze(this, parent, inspecter, filter);
 					} else if (Image.check(this.scanner.tokens, token)) {
 						element = Image.analyze(this, parent, inspecter, filter);
 					} else if (Keyword.check(this.scanner.tokens, token)) {

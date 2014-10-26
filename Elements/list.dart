@@ -87,6 +87,7 @@ class EList extends Element {
         				int nextStep = getNextStep(parser);
         				var afterToken = parser.scanner.read();
         		       		if (hierarchy > nextHierarchy) {
+        		       			parser.scanner.back();
         		       			exit = true;
                                			return true;
                                		} else if (hierarchy == nextHierarchy) {

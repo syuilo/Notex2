@@ -1,14 +1,31 @@
 part of Notex2;
 
+class Error {
+	String description = '';
+	int row = 0;
+	int col = 0;
+	
+	Error(String description, [int row = 0, int col = 0]) {
+		this.description = description;
+		this.row = row;
+		this.col = col;
+	}
+}
+
 /**
  * 構文解析器
  */
 class Parser {
 	Scanner scanner;
 	int sectionCount = 0;
+	List<Error> errors = new List();
 	
 	Parser(Scanner scanner) {
 		this.scanner = scanner;
+	}
+	
+	void addError(Error error) {
+		this.errors.add(error);
 	}
 	
 	/**
@@ -21,7 +38,7 @@ class Parser {
 	 * 
 	 * @return 生成された要素の配列。
 	 */
-	List<Element> analyze(Element parent, [inspecter(Token token), List<String> filter]) {
+	List<Element> analyze(Element parent, [inspecter(Token token), List<String> filter, void scanEnd()]) {
 		List<Element> elements = new List();
 		this.scanner.scan((Token token) {
 			if (inspecter != null) {
@@ -103,7 +120,7 @@ class Parser {
 					this.scanner.next();
 					break;
 			}
-		});
+		}, scanEnd);
 		return elements;
 	}
 }

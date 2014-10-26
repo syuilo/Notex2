@@ -64,13 +64,18 @@ class Scanner {
 	 * ソースを走査します。トークンに出会う度に指定されたスキャナが呼ばれます。
 	 * スキャナが [true] を返した場合、そこで直ちに走査は終了し、関数が終了します。
 	 */
-	void scan(bool scanner(Token token)) {
+	void scan(bool scanner(Token token), [scanEnd()]) {
 		while ((this.pos) < this.tokens.length) {
 			Token token = this.read();
 			//print(token);
 			if (scanner(token) == true) {
 				break;
 			}	
+		}
+		if (scanEnd != null) {
+			if (this.pos >= (this.tokens.length - 1)) {
+				scanEnd();
+			}
 		}
 	}
 }

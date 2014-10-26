@@ -26,31 +26,38 @@ class Code extends Element {
         }
 	
 	static Code generate(Parser parser, Element parent) {
-        		Code code = new Code();
-        		code.parent = parent;
-        		parser.scanner.next(2);
-        		parser.scanner.scan((Token token) {
-        			switch (token.token) {
-        				case 'escape':
-        					parser.scanner.next();
-                                		code.code += parser.scanner.read().lexeme;
-        					break;
-        				case 'quotation':
-        					if (parser.scanner.read(1).token == 'quotation' &&
-        						parser.scanner.read(2).token != 'quotation') {
-        						parser.scanner.next(1);
-        						return true;
-        					}
-        					continue text;
-        			text:
-        				default:
-        					code.code += token.lexeme;
-        					break;
-        			}
-        			parser.scanner.next();
-        		});
-        		code.code = htmlEscape(code.code.trim());
-        		code.lang = htmlEscape(code.lang);
-        		return code;
-        	}
+		Token startToken = parser.scanner.read();
+		Code code = new Code();
+		code.parent = parent;
+		parser.scanner.next(2);
+		parser.scanner.scan((Token token) {
+			switch (token.token) {
+				case 'escape':
+					parser.scanner.next();
+                        		code.code += parser.scanner.read().lexeme;
+					break;
+				case 'quotation':
+					if (parser.scanner.read(1).token == 'quotation' &&
+						parser.scanner.read(2).token != 'quotation') {
+						parser.scanner.next(1);
+						return true;
+					}
+					continue text;
+			text:
+				default:
+					code.code += token.lexeme;
+					break;
+			}
+			parser.scanner.next();
+		}, () {
+			parser.addError(new Error(
+				'${startToken.row}行目の${startToken.col}列目あたりから始まった Code(\'\') が閉じていません。',
+				startToken.row,
+				startToken.col
+				));
+		});
+		code.code = htmlEscape(code.code.trim());
+		code.lang = htmlEscape(code.lang);
+		return code;
+	}
 }

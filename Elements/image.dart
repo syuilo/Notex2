@@ -24,6 +24,7 @@ class Image extends Element {
         }
 	
 	static Image generate(Parser parser, Element parent) {
+		Token startToken = parser.scanner.read();
 		Image img = new Image();
 		img.parent = parent;
 		parser.scanner.next(2);
@@ -36,6 +37,12 @@ class Image extends Element {
 					break;
 			}
 			parser.scanner.next();
+		}, () {
+			parser.addError(new Error(
+				'${startToken.row}行目の${startToken.col}列目あたりから始まった Image(!) が閉じていません。',
+				startToken.row,
+				startToken.col
+				));
 		});
 		img.url = htmlEscape(img.url);
 		return img;

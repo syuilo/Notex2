@@ -68,6 +68,10 @@ class Token {
 	int id = 0;
 	String token = "";
 	String lexeme = "";
+
+	// 解析には不要。エラー提示用
+	int row = 0; // 行
+	int col = 0; // 列
 }
 
 /**

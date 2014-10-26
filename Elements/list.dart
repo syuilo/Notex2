@@ -36,6 +36,7 @@ class EList extends Element {
         }
         
        static EList generate(Parser parser, Element parent) {
+	       Token startToken = parser.scanner.read();
 		EList list = new EList();
 		list.parent = parent;
 		list.type = parser.scanner.read(1).token == 'number' ? 'ordered' : 'unordered';
@@ -56,6 +57,12 @@ class EList extends Element {
 				return true;
 			}
 			parser.scanner.next();
+		}, () {
+			parser.addError(new Error(
+				'${startToken.row}行目の${startToken.col}列目あたりから始まった List(- または 数字.) が閉じていません。',
+				startToken.row,
+				startToken.col
+				));
 		});
 		parser.scanner.back();
 		return list;

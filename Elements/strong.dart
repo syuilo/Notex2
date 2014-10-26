@@ -27,6 +27,7 @@ class Strong extends Element {
         }
 	
 	static Strong generate(Parser parser, Element parent, [inspecter(token), List<String> filter]) {
+		Token startToken = parser.scanner.read();
 		Strong strong = new Strong();
 		strong.parent = parent;
 		parser.scanner.next(2);
@@ -37,7 +38,13 @@ class Strong extends Element {
 		}
 		strong.children = parser.analyze(strong, (token) {
 			return (token.token == 'asterisk') && (parser.scanner.tokens[token.id + 1].token == 'asterisk');
-		}, filter);
+		}, filter, () {
+			parser.addError(new Error(
+				'${startToken.row}行目の${startToken.col}列目あたりから始まった Strong(**) が閉じていません。',
+				startToken.row,
+				startToken.col
+				));
+		});
 		parser.scanner.next();
 		return strong;
 	}

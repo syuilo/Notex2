@@ -27,6 +27,7 @@ class MultiLineCode extends Element {
         }
 	
 	static MultiLineCode generate(Parser parser, Element parent) {
+			Token startToken = parser.scanner.read();
         		MultiLineCode code = new MultiLineCode();
         		code.parent = parent;
         		parser.scanner.next(4);
@@ -64,6 +65,12 @@ class MultiLineCode extends Element {
         					break;
         			}
         			parser.scanner.next();
+        		}, () {
+        			parser.addError(new Error(
+        				'${startToken.row}行目の${startToken.col}列目あたりから始まった Code(\'\'\') が閉じていません。',
+        				startToken.row,
+        				startToken.col
+        				));
         		});
         		code.code = htmlEscape(code.code.trim());
         		code.lang = htmlEscape(code.lang);

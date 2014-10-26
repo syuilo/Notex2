@@ -27,6 +27,7 @@ class Keyword extends Element {
         }
 	
 	static Keyword generate(Parser parser, Element parent, [inspecter(token), List<String> filter]) {
+		Token startToken = parser.scanner.read();
 		Keyword keyword = new Keyword();
 		keyword.parent = parent;
 		parser.scanner.next();
@@ -37,7 +38,13 @@ class Keyword extends Element {
 		}
 		keyword.children = parser.analyze(keyword, (token) {
 			return (token.token == 'asterisk') && (parser.scanner.tokens[token.id + 1].token != 'asterisk');
-		}, filter);
+		}, filter, () {
+			parser.addError(new Error(
+				'${startToken.row}行目の${startToken.col}列目あたりから始まった Keyword(*) が閉じていません。',
+				startToken.row,
+				startToken.col
+				));
+		});
 		return keyword;
 	}
 }

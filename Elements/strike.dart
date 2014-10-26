@@ -27,6 +27,7 @@ class Strike extends Element {
         }
 	
 	static Strike generate(Parser parser, Element parent, [inspecter(token), List<String> filter]) {
+		Token startToken = parser.scanner.read();
 		Strike strike = new Strike();
 		strike.parent = parent;
 		parser.scanner.next(2);
@@ -37,7 +38,13 @@ class Strike extends Element {
 		}
 		strike.children = parser.analyze(strike, (token) {
 			return (token.token == 'tilde' && parser.scanner.tokens[token.id + 1].token == 'tilde');
-		}, filter);
+		}, filter, () {
+			parser.addError(new Error(
+				'${startToken.row}行目の${startToken.col}列目あたりから始まった Strike(~~) が閉じていません。',
+				startToken.row,
+				startToken.col
+				));
+		});
 		parser.scanner.next();
 		return strike;
 	}

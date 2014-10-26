@@ -26,6 +26,7 @@ class Link extends Element {
         }
         
        static Link generate(Parser parser, Element parent, [inspecter(token), List<String> filter]) {
+	       Token startToken = parser.scanner.read();
 		Link link = new Link();
 		link.parent = parent;
 		parser.scanner.next();
@@ -34,6 +35,12 @@ class Link extends Element {
 				return token.token == 'close_square_bracket';
 			}, filter);
 			return true;
+		}, () {
+			parser.addError(new Error(
+				'${startToken.row}行目の${startToken.col}列目あたりから始まった Link([) が閉じていません。',
+				startToken.row,
+				startToken.col
+				));
 		});
 		parser.scanner.next(2);
 		parser.scanner.scan((Token token) {
@@ -45,6 +52,12 @@ class Link extends Element {
 					break;
 			}
 			parser.scanner.next();
+		}, () {
+			parser.addError(new Error(
+				'${startToken.row}行目の${startToken.col}列目あたりから始まった Link([) が閉じていません。',
+				startToken.row,
+				startToken.col
+				));
 		});
 		link.url = htmlEscape(link.url);
 		return link;

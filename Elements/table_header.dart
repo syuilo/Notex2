@@ -16,6 +16,7 @@ class TableHeader extends Element {
 		for (Element element in this.children) {
 			html += element.toHtml();
 		}
+		html = html.trim();
 		return "<th$attribute>$html</th>";
 	}
 }

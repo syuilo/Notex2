@@ -16,6 +16,7 @@ class TableData extends Element {
 		for (Element element in this.children) {
 			html += element.toHtml();
 		}
+		html = html.trim();
 		return "<td$attribute>$html</td>";
 	}
 }

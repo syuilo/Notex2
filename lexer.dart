@@ -15,8 +15,13 @@ class Lexer {
         	int pos = 0;
         	int id = 0;
         	
+        	int row = 1;
+        	int col = 1;
+        	
         	Token tokeniza() {
                 	Token token = new Token();
+                	token.row = row;
+                	token.col = col;
                 	bool text = false;
                 	if (this.source.length == 0) {
                 		return null;
@@ -37,6 +42,7 @@ class Lexer {
                 				if (!text) {
                 					token.token = 'space';
                 					token.lexeme = char;
+                					col++;
                 				} else {
                 					pos--;
                 				}
@@ -45,6 +51,8 @@ class Lexer {
                 				if (!text) {
                 					token.token = 'newline';
                 					token.lexeme = char;
+                					row++;
+                					col = 1;
                 				} else {
                 					pos--;
                 				}
@@ -62,6 +70,7 @@ class Lexer {
                 				if (!text) {
                 					token.token = 'number';
                 					token.lexeme = char;
+                					col++;
                 				} else {
                 					pos--;
                 				}
@@ -70,6 +79,7 @@ class Lexer {
                 				if (!text) {
                 					token.token = 'quotation';
                 					token.lexeme = char;
+                					col++;
                 				} else {
                 					pos--;
                 				}
@@ -79,6 +89,7 @@ class Lexer {
                 				if (!text) {
                 					token.token = 'double_quotation';
                 					token.lexeme = char;
+                					col++;
                 				} else {
                 					pos--;
                 				}
@@ -87,6 +98,7 @@ class Lexer {
                 				if (!text) {
                 					token.token = 'period';
                 					token.lexeme = char;
+                					col++;
                 				} else {
                 					pos--;
                 				}
@@ -95,6 +107,7 @@ class Lexer {
                 				if (!text) {
                 					token.token = 'comma';
                 					token.lexeme = char;
+                					col++;
                 				} else {
                 					pos--;
                 				}
@@ -103,6 +116,7 @@ class Lexer {
                 				if (!text) {
                 					token.token = 'at_mark';
                 					token.lexeme = char;
+                					col++;
                 				} else {
                 					pos--;
                 				}
@@ -111,6 +125,7 @@ class Lexer {
                 				if (!text) {
                 					token.token = 'sharp';
                 					token.lexeme = char;
+                					col++;
                 				} else {
                 					pos--;
                 				}
@@ -119,6 +134,7 @@ class Lexer {
                 				if (!text) {
                 					token.token = 'asterisk';
                 					token.lexeme = char;
+                					col++;
                 				} else {
                 					pos--;
                 				}
@@ -127,6 +143,7 @@ class Lexer {
                 				if (!text) {
                 					token.token = 'hyphen';
                 					token.lexeme = char;
+                					col++;
                 				} else {
                 					pos--;
                 				}
@@ -135,6 +152,7 @@ class Lexer {
                 				if (!text) {
                 					token.token = 'tilde';
                 					token.lexeme = char;
+                					col++;
                 				} else {
                 					pos--;
                 				}
@@ -143,6 +161,7 @@ class Lexer {
                 				if (!text) {
                 					token.token = 'vertical_bar';
                 					token.lexeme = char;
+                					col++;
                 				} else {
                 					pos--;
                 				}
@@ -151,6 +170,7 @@ class Lexer {
                 				if (!text) {
                 					token.token = 'open_bracket';
                 					token.lexeme = char;
+                					col++;
                 				} else {
                 					pos--;
                 				}
@@ -159,6 +179,7 @@ class Lexer {
                 				if (!text) {
                 					token.token = 'close_bracket';
                 					token.lexeme = char;
+                					col++;
                 				} else {
                 					pos--;
                 				}
@@ -167,6 +188,7 @@ class Lexer {
                 				if (!text) {
                 					token.token = 'open_square_bracket';
                 					token.lexeme = char;
+                					col++;
                 				} else {
                 					pos--;
                 				}
@@ -175,6 +197,7 @@ class Lexer {
                 				if (!text) {
                 					token.token = 'close_square_bracket';
                 					token.lexeme = char;
+                					col++;
                 				} else {
                 					pos--;
                 				}
@@ -183,6 +206,7 @@ class Lexer {
                 				if (!text) {
                 					token.token = 'open_curly_bracket';
                 					token.lexeme = char;
+                					col++;
                 				} else {
                 					pos--;
                 				}
@@ -191,6 +215,7 @@ class Lexer {
                 				if (!text) {
                 					token.token = 'close_curly_bracket';
                 					token.lexeme = char;
+                					col++;
                 				} else {
                 					pos--;
                 				}
@@ -199,6 +224,7 @@ class Lexer {
                 				if (!text) {
                 					token.token = 'greater_than';
                 					token.lexeme = char;
+                					col++;
                 				} else {
                 					pos--;
                 				}
@@ -207,6 +233,7 @@ class Lexer {
                 				if (!text) {
                 					token.token = 'less_than';
                 					token.lexeme = char;
+                					col++;
                 				} else {
                 					pos--;
                 				}
@@ -215,6 +242,7 @@ class Lexer {
                 				if (!text) {
                 					token.token = 'exclamation_mark';
                 					token.lexeme = char;
+                					col++;
                 				} else {
                 					pos--;
                 				}
@@ -223,6 +251,7 @@ class Lexer {
                 				text = true;
                 				token.token = 'text';
                 				token.lexeme += char;
+                				col++;
                 				break;
                 		}
                 	}

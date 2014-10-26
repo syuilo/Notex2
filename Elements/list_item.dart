@@ -6,7 +6,7 @@ class EListItem extends Element {
 	String toHtml([String id = '', int hierarchy = 0]) {
 		String html = "";
 		for (Element element in this.children) {
-			html += element.toHtml();
+			html += element.toHtml(id, hierarchy + 1);
 		}
 		return indent(hierarchy) + "<li>$html</li>\n";
 	}

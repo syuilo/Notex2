@@ -9,10 +9,11 @@ class EList extends Element {
 		for (Element element in this.children) {
 			html += element.toHtml(id, hierarchy + 1);
 		}
-		if (this.type == "ordered") {
-			return indent(hierarchy) + "<ol>\n$html" + indent(hierarchy) + "</ol>\n";
+		String tag = this.type == 'ordered' ? 'ol' : 'ul';
+		if (this.parent.name == 'list_item') {
+			return '\n' + indent(hierarchy) + "<$tag>\n$html" + indent(hierarchy) + "</$tag>\n" + indent(hierarchy - 1);
 		} else {
-			return indent(hierarchy) + "<ul>\n$html" + indent(hierarchy) + "</ul>\n";
+			return indent(hierarchy) + "<$tag>\n$html" + indent(hierarchy) + "</$tag>\n";
 		}
 	}
 	
@@ -70,9 +71,7 @@ class EList extends Element {
 			EListItem item = new EListItem();
 			item.parent = list;
 			EList childList;
-			//var beforeToken = parser.scanner.read();
 			bool exit = false;
-			//var afterToken = parser.scanner.read();
 			item.children = parser.analyze(list, (token) {
 				if (
         				parser.scanner.pick(token.id).token == 'newline' && (
@@ -82,12 +81,10 @@ class EList extends Element {
         				)
         			) {
                 			parser.scanner.next();
-                			var beforeToken = parser.scanner.read();
         				int nextHierarchy = getNextHierarchy(parser);
         				int nextStep = getNextStep(parser);
-        				var afterToken = parser.scanner.read();
         		       		if (hierarchy > nextHierarchy) {
-        		       			parser.scanner.back();
+                        			parser.scanner.back(2);
         		       			exit = true;
                                			return true;
                                		} else if (hierarchy == nextHierarchy) {
@@ -106,13 +103,18 @@ class EList extends Element {
 				return token.token == 'newline';
 			}, ['paragraph']);
 			if (exit) {
-				list.children.add(item);
+				if (item.children.length != 0) {
+					list.children.add(item);
+				}
 				return true;
 			}
 			if (childList != null) {
+				childList.parent = item;
 				item.children.add(childList);
 			}
-			list.children.add(item);
+			if (item.children.length != 0) {
+				list.children.add(item);
+			}
 			if (parser.scanner.read(1).token == 'newline') {
 				parser.scanner.next();
 				return true;

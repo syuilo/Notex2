@@ -62,6 +62,7 @@ class EList extends Element {
 		} else {
 			parser.scanner.back();
 		}
+		
 		parser.scanner.scan((Token token) {
 			if (list.type == 'ordered') {
 				parser.scanner.next(2);
@@ -71,29 +72,40 @@ class EList extends Element {
 			EListItem item = new EListItem();
 			item.parent = list;
 			EList childList;
+			String childListType = '';
 			bool exit = false;
-			item.children = parser.analyze(list, (token) {
+			int nextHierarchy = 0;
+			item.children = parser.analyze(item, (token) {
 				if (
-        				parser.scanner.pick(token.id).token == 'newline' && (
-        					parser.scanner.pick(token.id + 1).token == 'hyphen' || (
+					parser.scanner.pick(token.id).token == 'newline' && (
+						parser.scanner.pick(token.id + 1).token == 'hyphen' || (
         						parser.scanner.pick(token.id + 1).token == 'number' && parser.scanner.pick(token.id + 2).token == 'period'
         					)
         				)
         			) {
-                			parser.scanner.next();
-        				int nextHierarchy = getNextHierarchy(parser);
+					if (parser.scanner.pick(token.id + 1).token == 'number' && parser.scanner.pick(token.id + 2).token == 'period') {
+						childListType = 'ordered';
+						parser.scanner.next(2);
+					} else {
+						childListType = 'unordered';
+						parser.scanner.next();
+					}
+        				nextHierarchy = getNextHierarchy(parser);
         				int nextStep = getNextStep(parser);
         		       		if (hierarchy > nextHierarchy) {
-                        			parser.scanner.back(2);
+        		       			// 昇る時
+        		       			parser.scanner.back(2);
         		       			exit = true;
                                			return true;
                                		} else if (hierarchy == nextHierarchy) {
+                               			// 兄弟
                         			if (list.type == 'ordered') {
                         				parser.scanner.next(nextStep - 3);
                         			} else {
                         				parser.scanner.next(nextStep - 2);
                         			}
-                               		} else {
+                               		} else { // hierarchy < nextHierarchy
+                               			// 潜る時
                                			parser.scanner.back();
                                			childList = new EList();
                                			childList.parent = item;

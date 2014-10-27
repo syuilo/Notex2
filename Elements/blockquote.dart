@@ -13,9 +13,8 @@ class Blockquote extends Element {
 	
 	static bool check(Scanner scanner, Token token) {
         	return
-        		(token.token == 'newline') &&
-        		(scanner.pick(token.id + 1).token == 'newline') &&
-        		(scanner.pick(token.id + 2).token == 'less_than');
+        		(scanner.pick(token.id).token == 'newline') &&
+        		(scanner.pick(token.id + 1).token == 'less_than');
         }
 
        static Element analyze(Parser parser, Element parent, [inspecter(Token token), List<String> filter]) {
@@ -32,7 +31,7 @@ class Blockquote extends Element {
 		blockquote.parent = parent;
 		parser.scanner.next(3);
 		blockquote.children = parser.analyze(blockquote, (token) {
-			if (token.token == 'newline' && parser.scanner.tokens[token.id + 1].token == 'newline') {
+			if (token.token == 'greater_than') {
 				return true;
 			}
 			return false;

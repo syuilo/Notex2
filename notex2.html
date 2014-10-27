@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Notex2</title>
+	<script async type="application/dart" src="main.dart"></script>
+	<script async src="packages/browser/dart.js"></script>
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+	<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
+	<script async src="script.js"></script>
+	<link rel="stylesheet" href="notex2.css">
+</head>
+<body>
+	<header>
+		<h1><img src="./notex2.png" alt="notex2"/></h1>
+	</header>
+	
+	<main>
+		<section id="sourceContainer">
+			<h2>Source (Please try to edit it!)</h2>
+			<textarea id="source">
+#Notex2
+Notex2 is a *Markdown* compiler.
+**せっかくだから**俺はこの~~*赤*の扉~~を選ぶぜ
+
+##Link
+click[here](http://syuilo.com)!!!
+
+##Image
+image: !(http://syuilo.com/notex2/notex2.png)
+
+##List
+ul list
+
+-Akari
+-Chinatsu
+-Yui
+-Kyoko
+
+ol list
+
+1.Akari
+2.Chinatsu
+3.Yui
+4.Kyoko
+
+
+##Code
+'''print("Hello, world !");'''
+set langage:
+'''@Dart
+print("Hello, world !");'''
+
+</textarea>
+		</section>
+		<section id="preview">
+			<h2>Preview</h2>
+			<div id="tableOfContents">
+			</div>
+			<div id="article_main">
+			</div>
+		</section>
+		<section id="outputContainer">
+			<h2>Output</h2>
+			<div id="error"></div>
+			<pre><code><output id="output"></output></code></pre>
+		</section>
+	</main>
+</body>
+</html>

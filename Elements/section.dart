@@ -19,7 +19,7 @@ class Section extends Element {
                 }
                 */
 		if (id != '') {
-			attribute = ' id="#${id}-${this.number}"';
+			attribute = ' id="${id}-${this.number}"';
 		}
 		return indent(hierarchy) + "<section$attribute>\n"
 				+ indent(hierarchy + 1) + "<$h>$title</$h>\n"

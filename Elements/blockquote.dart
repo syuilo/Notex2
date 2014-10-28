@@ -14,7 +14,7 @@ class Blockquote extends Element {
 	
 	static bool check(Scanner scanner, Token token) {
         	return
-        		(scanner.pick(token.id).token == 'newline') &&
+        		(scanner.read().token == 'newline') &&
         		(scanner.pick(token.id + 1).token == 'less_than');
         }
 

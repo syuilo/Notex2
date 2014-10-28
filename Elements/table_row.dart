@@ -1,4 +1,4 @@
-part of Notex2;
+part of notex2;
 
 class TableRow extends Element {
 	String name = 'table_row';

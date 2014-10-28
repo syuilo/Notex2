@@ -1,4 +1,4 @@
-part of Notex2;
+part of notex2;
 
 class Section extends Element {
 	String name = 'section';

@@ -1,4 +1,4 @@
-part of Notex2;
+part of notex2;
 
 class Link extends Element {
 	String name = 'link';

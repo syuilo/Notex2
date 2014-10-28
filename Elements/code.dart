@@ -1,4 +1,4 @@
-part of Notex2;
+part of notex2;
 
 class Code extends Element {
 	String name = 'code';

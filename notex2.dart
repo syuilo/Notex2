@@ -4,45 +4,45 @@
  *                                                      syuilo
  **************************************************************** */
 
-library Notex2;
+library notex2;
 
 /*
  * Import Scanner
  */
-part "scanner.dart";
+part 'scanner.dart';
 
 /*
  * Import Parser
  */
-part "parser.dart";
+part 'parser.dart';
 
 /*
  * Import lexcal analyzer
  */
-part "lexer.dart";
+part 'lexer.dart';
 
 /*
  * Import elements
  */
-part "Elements/element.dart";
-part "Elements/article.dart";
-part "Elements/blockquote.dart";
-part "Elements/code.dart";
-part "Elements/image.dart";
-part "Elements/keyword.dart";
-part "Elements/link.dart";
-part "Elements/list.dart";
-part "Elements/list_item.dart";
-part "Elements/multilinecode.dart";
-part "Elements/paragraph.dart";
-part "Elements/section.dart";
-part "Elements/strike.dart";
-part "Elements/strong.dart";
-part "Elements/table.dart";
-part "Elements/table_data.dart";
-part "Elements/table_header.dart";
-part "Elements/table_row.dart";
-part "Elements/text.dart";
+part 'Elements/element.dart';
+part 'Elements/article.dart';
+part 'Elements/blockquote.dart';
+part 'Elements/code.dart';
+part 'Elements/image.dart';
+part 'Elements/keyword.dart';
+part 'Elements/link.dart';
+part 'Elements/list.dart';
+part 'Elements/list_item.dart';
+part 'Elements/multilinecode.dart';
+part 'Elements/paragraph.dart';
+part 'Elements/section.dart';
+part 'Elements/strike.dart';
+part 'Elements/strong.dart';
+part 'Elements/table.dart';
+part 'Elements/table_data.dart';
+part 'Elements/table_header.dart';
+part 'Elements/table_row.dart';
+part 'Elements/text.dart';
 
 
 void scream() {
